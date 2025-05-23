@@ -1,0 +1,11 @@
+---
+.title = "Blog",
+.date = @date("2025-05-23T00:00:00"),
+.author = "FullStackDev",
+.layout = "blog/index.shtml",
+.alternatives = [{ 
+    .name = "rss",
+    .layout = "blog/index.xml", 
+    .output = "index.xml",
+}],
+--- 

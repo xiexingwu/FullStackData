@@ -1,0 +1,11 @@
+---
+.title = "Welcome",
+.date = @date("2025-05-23T00:00:00"),
+.author = "FullStackDev",
+.layout = "index.shtml",
+--- 
+
+
+# Welcome
+Welcome to the Full Stack Data Dev, where I share musings and learnings from work and from hobby projects.
+

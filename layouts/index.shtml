@@ -1,0 +1,8 @@
+<extend template="base.shtml">
+<head id="head">
+</head>
+
+<title id="title">The Full Stack Data Dev</title>
+<body id="body">
+  <div :html="$page.content()"></div>
+</body>

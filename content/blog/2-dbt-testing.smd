@@ -1,0 +1,7 @@
+---
+.title = "Data quality testing in dbt",
+.date = @date("2025-05-24T00:00:00"),
+.author = "FullStackDev",
+.layout = "blog/post.shtml",
+--- 
+

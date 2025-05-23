@@ -1,0 +1,558 @@
+---
+.title = "BigQuery Pipe Syntax: Cleaner SQL",
+.date = @date("2025-05-23T00:00:00"),
+.author = "FullStackDev",
+.layout = "blog/post.shtml",
+--- 
+
+# Introduction
+
+This document is intended to highlight the benefits of BigQuery's Pipe syntax SQL and convince users for adoption.
+If you’re not familiar with Pipe syntax, you may consider starting from a [later section]($link.ref("comparison"))
+to see some simple code side-by-side with Google standard SQL.
+
+No contrived examples, just pure real-world use cases.
+
+Here are some more comprehensive resources if you find the examples here insufficient:
+- Official [documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/pipe-syntax) for Pipe syntax: 
+- Conference paper introducing Pipe syntax: https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/
+
+If I had to summarise the benefits of Pipe syntax SQL in a few bullet points, it would be:
+- Improved guarantees on table cardinality
+- Stronger integration with templating languages (i.e. Jinja in dbt)
+- Improved readability from:
+  - Fewer CTEs that are more deliberately named
+  - Concise multi-level aggregation
+  - Concise sequential transforms
+- Improved debugging experience in BigQuery console
+
+## Game-changer improvements
+
+Easier to transform arrays of structs
+
+Consider a table with an array of structs as follows.
+
+Sample table
+
+-- 1 row = 1 patient with an array of historical weight/height measurements
+WITH existing_logic AS (
+  SELECT
+    1 AS patient_id,
+    [
+      STRUCT(70 AS weight, 1.75 AS height), -- weight:kg, height:m
+      STRUCT(71 AS weight, 1.75 AS height)
+    ] AS history
+  UNION ALL
+  SELECT
+    2 AS patient_id,
+    [
+      STRUCT(64 AS weight, 1.65 AS height)
+    ] AS history
+)
+
+SELECT * FROM existing_logic
+
+
+
+Suppose we are now tasked to augment the history array by adding (BMI = weight / height^2) for each historical record. E.g. final table should appear as follows.
+
+Target state of table
+
+There are many ways to achieve this in standard SQL, but we can broadly categorise them into 2 approaches:
+
+Manipulate the arrays in place using a subquery
+
+Unnest the arrays in top-level CTEs, perform the transform, and re-aggregate.
+
+Let’s look at some example implementations using standard SQL.
+
+Standard SQL (Approach 1)
+
+Standard SQL (Approach 2)
+
+WITH existing_logic AS (
+  -- Existing transformations in model
+),
+bmi AS (
+  SELECT
+    * REPLACE (
+      ARRAY((                        -- This is the start of the subquery
+        SELECT AS STRUCT
+          *,
+          weight/POWER(height, 2) AS BMI,
+        FROM UNNEST(history)
+      )) AS history                  -- This is the end of the subquery
+    )
+  FROM existing_logic
+),
+more_logic AS (
+  -- Further transformations in model
+)
+
+WITH existing_logic AS (
+  -- Existing transformations in model
+),
+bmi_unnest AS (
+  SELECT
+    existing_logic.* REPLACE(h AS history),
+    OFFSET
+  FROM existing_logic, UNNEST(history) AS h WITH OFFSET
+),
+bmi_compute AS (
+  SELECT
+    * REPLACE(
+      (SELECT AS STRUCT
+        history.*,
+        history.weight / POWER(history.height, 2) AS BMI
+      ) AS history
+    )
+  FROM bmi_unnest
+),
+bmi_reagg AS (
+  SELECT
+    * EXCEPT(OFFSET, history),
+    ARRAY_AGG(history ORDER BY OFFSET) AS history
+  FROM bmi_compute
+  GROUP BY ALL               -- Have fun debugging a SELECT * GROUP BY ALL
+),
+more_logic AS (
+  -- Further transformations in model
+)
+
+
+
+Despite the first approach appearing shorter, it is typically considered more difficult to read since the reader needs to identify the start and end of subqueries among existing CTEs. This difficulty is greatly exacerbated by any logic that is more involved than a simple example computation and requires CTEs for sequential transformations.
+
+The second approach is easier to read since all the CTEs are top-level and the reader doesn’t need to identify the start and end of nested subqueries. However, this improved readability comes at a cost:
+
+Unnesting the array & re-aggregating destroys guarantees on the table cardinality. This makes the table more fragile to future code changes. Testing the table can help, but it’s difficult to provide any guarantees on table cardinality assuming it’s possible to test for this in the first place.
+
+The re-aggregation can be done either by a SELECT * GROUP BY ALL for brevity (but difficult to debug), or by tediously listing all the grouping column.
+
+Namespace pollution in top-level CTEs.
+
+Consider now the Pipe Syntax variant.
+
+Pipe Syntax
+
+WITH existing_logic AS (
+  -- Existing transformations in model
+),
+bmi AS (
+  FROM existing_logic
+  |> SET
+      history = ARRAY((
+          FROM UNNEST(history)
+          |> EXTEND weight/POWER(height, 2) AS BMI
+          |> SELECT AS STRUCT *
+      ))
+),
+more_logic AS (
+  -- Further transformations in model
+)
+
+Let’s see how it addresses some of the concerns from the standard SQL variants:
+
+Subqueries
+Pipe syntax introduces one nested subquery per array. Furthermore, complex transformations can just be chained before the final |> SELECT AS STRUCT * instead of using nested CTEs.
+
+Table cardinality
+The cardinality of the top-level table is untouched.
+
+Namespace pollution
+A single CTE can be used to encapsulate as many or as few transformations as deemed appropriate.
+
+More powerful generic tests in dbt
+
+See section below: https://rome2rio.atlassian.net/wiki/spaces/TIPS/pages/3511648257/BQ+Pipe+Syntax+SQL#metric_conserved 
+
+## [Small conveniences]($section.id("comparison"))
+
+Easier to identify references to previous CTEs
+
+Consider the following example where cte3 references cte1.
+
+In Standard SQL, the declaration cte3 AS can be many lines apart from the reference FROM cte1 if the SELECT list is long.
+
+In Pipe syntax, the reference to cte1 is always within a few lines of cte3 AS.
+
+Standard SQL
+
+Pipe Syntax
+
+WITH
+cte1 AS (
+  SELECT
+    ...
+  FROM dataset.table
+),
+
+cte2 AS (
+  SELECT
+    ...
+  FROM dataset.table2
+),
+
+cte3 AS (
+  SELECT
+    ...
+  FROM cte1 -- this can be screens apart from cte3
+)
+
+SELECT
+  ...
+FROM cte3
+JOIN cte2 USING(...)
+
+WITH
+cte1 AS (
+  FROM dataset.table
+  |> SELECT
+      ...
+),
+
+cte2 AS (
+  FROM dataset.table2
+  |> SELECT
+      ...
+),
+
+cte3 AS (
+  FROM cte1 -- this appears immediatley below cte3
+  |> SELECT
+      ...
+)
+
+FROM cte3
+|> JOIN cte2 USING(...)
+|> SELECT
+    ...
+
+Easier to identify changes in table cardinality (row-count)
+
+Consider the following example where the table undergoes several transformations, each of which affect the final row count. In Standard SQL, the cardinality of the table changes 4 times due to the clauses UNNEST, WHERE, GROUP BY, and HAVING.
+
+Standard SQL
+
+Pipe Syntax
+
+SELECT
+  dim_1,
+  dim_2,
+  COUNTIF(some_criteria) AS metric_1,
+  ARRAY_AGG(some_expression) AS metric_2,
+FROM dataset.table, UNNEST(array) AS a
+WHERE some_filter
+GROUP BY dim_1, dim_2
+HAVING metric_1 > 0
+
+FROM dataset.table, UNNEST(arr) AS a
+|> WHERE some_filter
+|> AGGREGATE
+    COUNTIF(some_criteria) AS metric_1,
+    ARRAY_AGG(some_expression) AS metric_2,
+  GROUP BY
+    dim_1,
+    dim_2,
+|> WHERE metric_1 > 0
+
+Some pain points in Standard SQL and how Pipe syntax helps:
+
+If the SELECT list is very long, the dev has to scroll down quite far from the beginning of the CTE to find out how the cardinality has changed.
+In Pipe syntax, the dev immediately expects a change in cardinality upon coming across one of UNNEST, |> WHERE and |> AGGREGATE. For UNNEST, the team can choose to adopt the style of using |> CROSS JOIN UNNEST to denote an explicit change in cardinality.
+
+Additional mental headspace is needed to determine the order in which the table cardinality changes due to each of the 4 clauses (note that QUALIFY also affects cardinality).
+In Pipe syntax, the order in which cardinality changes is explicit with each chained |>. The changes in cardinality are thus sequential and can be more easily reasoned about.
+
+Easier multi-level aggregation
+
+In Standard SQL, each level of aggregation needs a new CTE (or god forbid a nested subquery). In Pipe syntax, each additional level of aggregation is just another chain of |> AGGREGATE … GROUP BY … clause.
+
+The appearance of AGGREGATE also gives immediate notice to the reader that the following logic is focused on aggregation. In Standard SQL, one would have to 1) read through a large list of dimensions until an aggregation function appears without an OVER clause or 2) scroll down to check for a GROUP BY clause.
+
+Standard SQL
+
+Pipe Syntax
+
+WITH
+date_OnD AS (
+  SELECT
+    Date,
+    OCanonical,
+    DCanonical,
+    
+    COUNT(1) AS metric1,
+    SUM(value) AS metric2,
+  FROM dataset.table
+  GROUP BY Date, OCanonical, DCanonical
+)
+
+SELECT
+  Date,
+  
+  SUM(metric1) AS metric1,
+  SUM(metric2) AS metric2,
+  
+  ARRAY_AGG(STRUCT(
+    OCanonical,
+    DCanonical,
+    metric1,
+    metric2
+  ) LIMIT 10) AS Examples
+FROM date_OnD
+GROUP BY Date
+
+FROM dataset.table
+|> AGGREGATE
+    COUNT(1) AS metric1,
+    SUM(value) AS metric2,
+  GROUP BY
+    Date, OCanonical, DCanonical
+|> AGGREGATE
+    SUM(metric1) AS metric1,
+    SUM(metric2) AS metric2,
+    
+    ARRAY_AGG(STRUCT(
+      OCanonical,
+      DCanonical,
+      metric1,
+      metric2
+    ) LIMIT 10) AS Examples
+  GROUP BY
+    Date
+
+Easier EXCEPT and REPLACE
+
+The equivalent of SELECT * EXCEPT () and SELECT * REPLACE () are now |> DROP and |> SET, respectively. Some niceties:
+
+Trailing commas makes it easy to toggle comments on these lines when developing code,
+
+The syntax for SET makes it very obvious which column is being replaced, as opposed to the REPLACE syntax which requires the dev to scan for the correct AS keyword (this can be extremely tedious when the column being replaced has struct fields being renamed).
+
+Standard SQL
+
+Pipe Syntax
+
+SELECT
+  * EXCEPT (
+    drop_1,
+    drop_2
+  ) REPLACE(
+    UDF1(col_1) AS col_1,
+    STRUCT(
+      DATE(col_2.Timestamp) AS Date,
+      col_2.Uid AS Aqid
+    ) AS col_2
+  )
+FROM dataset.table
+
+FROM dataset.table
+|> DROP
+    drop_1,
+    drop_2, -- trailing comma!
+|> SET
+    col_1 = UDF1(col_1),
+    col_2 = STRUCT(
+        DATE(col_2.Timestamp) AS Date,
+        col_2.Uid AS Aqid
+      ), -- trailing comma!
+
+Easier to manage sequential changes in column definitions
+
+Following on the discussion of REPLACE and SET above, there’s a common pattern where data needs to be processed one column at a time (e.g. deviceCategory needs to be cleaned before it can be used to determine R2rFrontEnd).
+
+The brevity of the code speaks for itself.
+
+Standard SQL
+
+Pipe Syntax
+
+WITH
+raw AS (
+  SELECT
+    col_1,
+    col_2,
+    col_3,
+  FROM dataset.table
+),
+
+new_col1 AS (
+  SELECT
+    * REPLACE (
+      UDF1(col_1) AS col_1
+    )
+  FROM raw
+),
+
+new_col2 AS (
+  SELECT
+    * REPLACE (
+      UDF2(col_1, col_2) AS col_2 -- depends on new col_1
+    )
+  FROM new_col2
+),
+
+new_col3 AS (
+  SELECT
+    * REPLACE (
+      UDF3(col_2, col_3) AS col_3 -- depends on new col_2
+    )
+  FROM new_col2
+)
+
+SELECT * FROM new_col3
+
+FROM dataset.table
+|> SET
+    col_1 = UDF1(col_1)
+|> SET
+    col_2 = UDF2(col_1, col_2) -- depends on new col_1
+|> SET
+    col_3 = UDF3(col_2, col_3) -- depends on new col_2
+
+Cleaner Aggregation
+
+In Standard SQL, dimensions and metrics can be in arbitrary order in the SELECT statement and the column names need to be manually duplicated in the GROUP BY statement if not using GROUP BY 1, 2 ... or GROUP BY ALL.
+
+When developing code, this becomes time consuming when:
+
+a column name needs to be renamed in both the SELECT and GROUP BY clauses,
+
+a column needs to be added/removed from GROUP BY when a dimension becomes a metric or vice-versa,
+
+debugging a column that should have been aggregated but wasn’t due to using GROUP BY ALL.
+
+In Pipe syntax, the separation of metrics and dimensions is demarcated by the GROUP BY keywords. Renaming of grouping columns becomes trivial.
+
+Note 1: Pipe syntax allows a trailing comma for the final column in GROUP BY which makes it easy to reorder grouping columns.
+
+Note 2: Pipe syntax doesn’t allow GROUP BY ALL. This may sound like an inconvenience as more lines of code might be needed, but there’s no actual change since the code is just being moved from SELECT to GROUP BY. There’s also the added benefit of the code being more explicit about what’s being grouped.
+
+Standard SQL
+
+Pipe Syntax
+
+WITH
+group_by_column_example AS (
+  SELECT
+    dim_1,
+    dim2 AS dim_2,
+
+    COUNT(1) AS metric,
+  FROM dataset.table
+  GROUP BY
+    dim_1,
+    dim_2
+),
+
+group_by_all_example AS (
+  SELECT
+    dim1,
+    
+    COUNT(1) AS metric1,
+    metric2, -- Forgot to aggregate this metric
+  FROM dataset.table
+  GROUP BY ALL
+)
+
+WITH
+group_by_column_example AS (
+  FROM datset.table
+  |> AGGREGATE
+      COUNT(1) AS metric,
+    GROUP BY
+      dim1,
+      dim2 AS dim_2, -- Column alias + trailing comma. Awesome!
+),
+
+group_by_all_example AS (
+  FROM dataset.table
+  |> AGGREGATE
+      COUNT(1) AS metric1,
+      metric2, -- BQ Engine will remind you to aggregate this
+    GROUP BY
+      dim1
+)
+
+
+
+Common patterns
+
+UNION ALL and EXCEPT DISTINCT
+
+FROM table1_v1
+|> UNION ALL
+    (FROM table1_v2),
+    (FROM table1_v3),
+|> EXCEPT DISTINCT
+    (FROM table1_obsolete)
+
+Selecting the schema columns at the end
+
+A common pattern in our current codebase is to have our first CTE extract the columns we need, and then have all the subsequent CTEs add/drop columns as needed while processing business logic, making liberal use of the patterns * EXCEPT and * REPLACE.
+
+One consequence of this is that table schemas have columns being ordered in non-intuitive ways (i.e. in whatever order columns were added in CTEs). This adds complexity when tables are obsoleted by new implementations and there needs to be a union of datasets to match schemas (e.g. https://github.com/rome2rio/cloudlake-dbt/blob/e82cf897ab8c341c8f3a64f85dc911e657019666/models/productMetrics/productMetrics-Sessions.sql, https://github.com/rome2rio/cloudlake-dbt/blob/e82cf897ab8c341c8f3a64f85dc911e657019666/models/monitoring/monitoring-UserExits.sql, https://github.com/rome2rio/cloudlake-dbt/blob/e82cf897ab8c341c8f3a64f85dc911e657019666/models/bookings/bookings-LegacyUserBookings.sql)
+
+With Pipe syntax, most business logic can be processed in pipes |> instead of in CTEs. This isolates the concern of having to reorder new columns and drop old columns to match schemas while processing other logic. The concern of column orders to match schemas can be containerised into the final |> SELECT pipe.
+
+Standard SQL
+
+Pipe Syntax
+
+WITH
+new AS (
+  SELECT
+    *
+  FROM dataset.table
+),
+
+business_logic AS (
+  SELECT
+    * EXCEPT (new_col)
+    REPLACE (
+      CAST(UDF(old_col) AS DATETIME) AS old_col 
+    ),
+  FROM new    
+),
+
+reorder_columns AS (
+  SELECT
+    * EXCEPT(old_col),
+    old_col, -- make sure old_col appears last
+  FROM business_logic
+),
+
+legacy AS (
+  SELECT * FROM dataset.table_legacy
+)
+
+SELECT * FROM legacy
+UNION ALL
+SELECT * FROM reorder_columns
+
+{%- set legacy_schema %}
+col_1,
+col_2,
+...
+{%- enset}
+
+WITH
+new AS (
+  FROM dataset.table
+  |> DROP new_col
+  |> SET
+      old_col = CAST(UDF(old_col) AS DATETIME)
+  |> SELECT
+      {{ legacy_schema }}
+),
+
+legacy AS (
+  FROM dataset.table_legacy
+  |> SELECT
+      {{ legacy_schema }}
+)
+
+FROM legacy
+|> UNION ALL (FROM new)
+
+
