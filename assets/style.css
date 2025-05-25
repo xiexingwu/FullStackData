@@ -83,3 +83,15 @@ footer {
 footer hr {
   width: 100%;
 }
+
+table, th, td{
+  border: 1px solid;
+  border-collapse: collapse;
+}
+td:empty {
+  border: 0px solid;
+}
+
+summary {
+  text-align: left;
+}

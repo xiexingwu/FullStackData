@@ -15,6 +15,15 @@ pre {
   padding: 10px 5px;
 }
 
+pre:has(>code){
+  border: 1px solid;
+  text-align: left;
+}
+
+p code, li code {
+  background: var(--comment-gray)
+}
+
 code.ziggy {
   color: var(--cyan);
 }
@@ -34,4 +43,25 @@ code.ziggy .numeric.constant {
 
 code.ziggy .function {
   color: var(--blue);
+}
+
+/* Code Fallback */
+code .keyword,
+code .type {
+  color: var(--light-yellow);
+}
+
+code .string {
+  color: var(--dark-yellow);
+}
+
+code .numeric.constant {
+  color: var(--magenta);
+}
+
+code .function {
+  color: var(--blue);
+}
+code .comment {
+  color: var(--comment-gray);
 }
