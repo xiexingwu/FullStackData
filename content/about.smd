@@ -14,10 +14,11 @@ I also love playing DanceDanceRevolution.
 
 ## My dev environment
 - System: MacOS
-- Terminal: WezTerm
+- Terminal: WezTerm + Zsh
 - Editor: NeoVim
 
 ## Projects
 This website is built using [zine](https://zine-ssg.io/).
+Take a peek at some of my hobby projects:
 
 - Resume template in [Typst](https://github.com/xiexingwu/typst-resume/blob/main/main.pdf).

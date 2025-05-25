@@ -15,3 +15,8 @@ git commit
 git push
 
 ```
+
+# To Do
+- Blog
+  - Date created/modified. 
+  - Tags.
