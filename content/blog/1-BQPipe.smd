@@ -1,5 +1,5 @@
 ---
-.title = "BigQuery Pipe Syntax: Cleaner SQL",
+.title = "Google Pipe Syntax: Cleaner SQL",
 .date = @date("2025-05-23T00:00:00"),
 .author = "FullStackDev",
 .layout = "blog/post.shtml",
@@ -8,10 +8,10 @@
 
 # Introduction
 
-This document is intended to highlight the benefits of BigQuery's Pipe syntax SQL and convince users for adoption.
-If you don't use BigQuery, then consider this some mental exercise on why pipes (functional programming) is a great addition to SQL.
-So that the comparison is mostly fair, I made a deliberate attempt to avoid contrived examples that overcomplicate standard SQL.
-In fact, most examples are based on production code written by old me and/or my colleagues.
+This blog is intended to highlight the benefits of Google's Pipe syntax SQL and convince users for adoption.
+If you don't use BigQuery (or another platform that supports it, like Apache Spark), then consider this blog as some mental exercise on why pipes (functional programming) is a great addition to SQL.
+So that the comparison with Standard SQL is mostly fair, I made a deliberate attempt to avoid contrived examples that overcomplicate standard SQL.
+In fact, most examples are based on production code written by past me and/or my colleagues.
 
 If you’re not familiar with Pipe syntax, you may consider starting from a [later section]($link.ref("comparison"))
 to see some simple code side-by-side with Google standard SQL.
@@ -32,7 +32,7 @@ If I had to summarise the benefits of Pipe syntax SQL in a few bullet points, it
 There are some [known limitations](https://cloud.google.com/bigquery/docs/pipe-syntax-guide#limitations) for Pipe Syntax at time of writing, the big one for me being:
 > You can't use a named window in pipe syntax.
 
-Named windows are extremely convenient for analytics processing, and I often resort to writing a new CTE in standard SQL specifically for window functions.
+Named windows are extremely convenient for analytics processing, and I often resort to using standard SQL in a new CTE specifically for window functions.
 
 Finally, even if you're convinced Pipe syntax is our lord and saviour, you don't necessarily have to convince your company to rewrite the entire codebase in Pipe syntax.
 Adopting a new syntax/language is not a trivial decision for a team and requires upskilling for the team (though IMHO pipe syntax is easier to learn than standard SQL).
@@ -177,7 +177,7 @@ Let’s see how it addresses some of the concerns from the standard SQL variants
 - **Subqueries**:
   Pipe syntax introduces one nested subquery per array. Furthermore, complex transformations can just be chained before the final `|> SELECT AS STRUCT *` instead of using nested CTEs.
 - **Table cardinality**:
-  The cardinality of the top-level table is untouched.
+  The cardinality of the top-level table is untouched. In fact, any changes in cardinality can be identified via the first word after the pipe, e.g. `WHERE`, `AGGREGATE`, `[LEFT|RIGHT|FULL] JOIN`.
 - **Namespace pollution**:
   A single CTE can be used to encapsulate as many or as few transformations as deemed appropriate.
 
@@ -505,6 +505,6 @@ group_by_all_example AS (
 ```
 
 # Closing thoughts
-I think Google BigQuery's Pipe syntax greatly improves the ergonomics of reading and writing SQL.
+I think Google Pipe syntax greatly improves the ergonomics of reading and writing SQL.
 Good developer ergonomics = faster development and/or more robust systems.
 I believe there's a lot of potential for other SQl dialects to adopt pipe syntax, and I look forward to the day where it becomes ubiquitous.
