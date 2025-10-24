@@ -95,9 +95,11 @@ This query follows the convention of [dbt tests](https://docs.getdbt.com/docs/bu
 WIP.
 
 ## Choice of testing nodes
-Instead of directly testing between the two `customer_value_*` tables, we could instead test that each of them are consistent with the upstream table `customer_data`.
+Instead of directly testing between the two `customer_value_*` tables above, we could instead test that each of them are consistent with the common parent table `customer_data`.
+
 Pros:
 - As more downstream tables are built off `customer_data` with the consistency test, we can expect tha consistency quality to transfer to all of them.
+
 Cons:
 - In the case of a data issue that might cause one of the tests to break, it's less obvious which two user-facing tables becomes inconsistent.
 
