@@ -92,6 +92,7 @@ WHERE ABS(error_pct) >= 1
 This query follows the convention of [dbt tests](https://docs.getdbt.com/docs/build/data-tests#overview) where failing rows are returned, i.e. the test is deemed passing if the query returns no rows.
 
 ## Example failure modes
+WIP.
 
 ## Choice of testing nodes
 Instead of directly testing between the two `customer_value_*` tables, we could instead test that each of them are consistent with the upstream table `customer_data`.

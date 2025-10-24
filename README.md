@@ -20,3 +20,6 @@ git push
 - Blog
   - Date created/modified. 
   - Tags.
+- 2 dbt testing
+  - Failure modes and choice of testing nodes sections.
+- 3 Pipe syntax testing
