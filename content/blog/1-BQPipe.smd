@@ -182,7 +182,7 @@ Let’s see how it addresses some of the concerns from the standard SQL variants
   A single CTE can be used to encapsulate as many or as few transformations as deemed appropriate.
 
 ### More powerful generic tests in dbt
-See this [later article]($link.page("blog/2-dbt-testing")).
+See this [later article]($link.page("blog/3-BQPipe-dbt-testing")).
 
 ## [Small conveniences]($section.id("comparison"))
 

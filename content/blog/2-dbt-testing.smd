@@ -3,5 +3,191 @@
 .date = @date("2025-05-24T00:00:00"),
 .author = "FullStackDev",
 .layout = "blog/post.shtml",
+.tags = ["SQL", "dbt"]
 --- 
 
+# Introduction
+This blog is aimed at sharing some novel approaches to data quality testing.
+We'll be using dbt as our tool throughout the article, but the ideas should be equally usable on tools like SQLMesh or on your favourite RDBMS.
+
+So what is data quality, and how would a company know whether they have achieved good data quality?
+For many companies that have some form of basic data quality control, data quality often applies at the data ingestion stage, checking for missing fields, valid timestamps, duplicate records, etc.
+For those with more investment, they will perhaps check that the data has the expected schema at various stages of the data pipeline.
+They may even employ testing frameworks like [dbt_expectations](https://hub.getdbt.com/metaplane/dbt_expectations/latest/) to assert stronger properties on the contents of the table.
+However, most of these data quality checks are targeted towards the technical teams (e.g. engineering & data analytics teams).
+What they don't do is inform the business how much impact the data issue has on their decision making.
+
+In my opinion, here are a few qualitative signs of a company good data quality:
+- The business stakeholders (e.g. product managers, leadership) actually make informed decisions based on the data presented to them. This is assuming they claim to be data-driven.
+- The business stakeholders don't frequently bother the data & analytics team with questions like "can we trust this number?" They are proactively notified of known data issues and know how their decision making might be impacted.
+- The business stakeholders don't complain about different dashboards showing different numbers for the same metric.
+
+ So what more can the data & analytics teams do to help the business get to this stage? We need even more expressive data tests that reflect what the business stakeholders expect from their data.
+
+# Consistency
+"Consistency" here means that a metric computed in one table/dashboard will be the same if computed in another, within some accepted tolerance.
+For example, the BI dashboard used by a product manager might have the YTD earnings of their product, and they expect the C-suite's dashboard to show the same number (or within 1% difference).
+
+Let's consider a more concrete (albeit contrived) example based on the following table `customer_data`.
+This table might be a cleaned fact table that other business functions are expected to use (as opposed to reading directly from a raw data stream).
+
+**customer_data**
+| customer_id | user_country | acquisition_channel | lifetime_value_usd |
+| --- |---|---|---|
+| 1 | US | GoogleAds | 5.0 |
+| 2 | CA | GoogleAds | 3.0 |
+| 3 | US | MicrosoftAds | 5.0 |
+| 4 | AU | Unknown | 2.0 |
+
+The C-suite may have a table built to sum the total lifetime value of all customers, grouped by user_country and filtered by known ads networks:
+
+```sql
+CREATE OR REPLACE TABLE `customer_value_csuite`
+SELECT
+  user_country,
+  SUM(lifetime_value_usd) AS revenue
+FROM `customer_data`
+WHERE acquisition_channel IN ("GoogleAds", "MicrosoftAds")
+GROUP BY user_country
+```
+
+The product manager may have a similar table, but simply grouped by acquisition_channel:
+
+```sql
+CREATE OR REPLACE TABLE `customer_value_pm`
+SELECT
+  acquisition_channel,
+  SUM(lifetime_value_usd) AS lifetime_value_usd
+FROM `customer_data`
+GROUP BY acquisition_channel
+```
+
+To check for data consistency against the C-suite table, the product manager might have their team write a query like this:
+```sql
+WITH
+tgt AS (
+  SELECT
+    SUM(lifetime_value_usd) AS metric
+  FROM `customer_value_pm`
+  WHERE acquisition_channel IN ("GoogleAds", "MicrosoftAds")
+),
+ref AS (
+  SELECT
+    SUM(revneue) AS reference
+  FROM `customer_value_csuite`
+),
+joined AS (
+  SELECT
+    metric,
+    reference,
+    100 * SAFE_DIVIDE(metric - reference, reference) AS error_pct
+  FROM tgt
+  JOIN ref ON TRUE
+)
+
+SELECT * FROM joined
+WHERE ABS(error_pct) >= 1
+```
+
+This query follows the convention of [dbt tests](https://docs.getdbt.com/docs/build/data-tests#overview) where failing rows are returned, i.e. the test is deemed passing if the query returns no rows.
+
+## Example failure modes
+
+## Choice of testing nodes
+Instead of directly testing between the two `customer_value_*` tables, we could instead test that each of them are consistent with the upstream table `customer_data`.
+Pros:
+- As more downstream tables are built off `customer_data` with the consistency test, we can expect tha consistency quality to transfer to all of them.
+Cons:
+- In the case of a data issue that might cause one of the tests to break, it's less obvious which two user-facing tables becomes inconsistent.
+
+When one downstream is no longer a strict subset of the other... Upstream consistency can still be tested.
+
+## Generalisation in dbt
+This is what the test would looks like in dbt as a generic test. I've named it `metric_conserved` in the spirit of conservation laws in physics.
+
+```sql
+-- tests/generic/metric_conserved.sql
+{% test metric_conserved(
+  model,
+  dims,
+  _metric,
+  ref_model,
+  _reference=None,
+  _residual="_metric - _reference",
+  fail_if="_residual IS NULL OR _residual != 0"
+) -%}
+
+{{ config(tags=["test_metric_conserved"]) }}
+
+{# parse arguments #}
+{% set _reference = _metric if _reference is none else _reference -%}
+
+{# unzip dimension pairs to target/reference #}
+{% set t_dims = [] -%}
+{% set r_dims = [] -%}
+{% for t, r in dims -%}
+{% do t_dims.append(t) -%}
+{% do r_dims.append(r) -%}
+{% endfor -%}
+
+-- _dummy column is for when there are no explicit grouping dimensions
+WITH
+tgt AS (
+  SELECT
+    {{ _metric }} AS _metric,
+    1 AS _dummy,
+    {{ t_dims | join(",") }}
+  FROM {{ model }}
+  GROUP BY
+    {{ (["_dummy"] + t_dims) | join(",") }}
+),
+ref AS (
+  SELECT
+    {{ _reference }} AS _reference,
+    1 AS _dummy,
+    {{ r_dims | join(",") }}
+  FROM {{ ref_model }}
+  GROUP BY
+    {{ (["_dummy"] + r_dims) | join(",") }}
+),
+joined AS(
+  SELECT
+    t.* EXCEPT(_dummy),
+    r._reference,
+    {{ _residual }} AS _residual,
+  FROM tgt AS t
+  LEFT JOIN ref AS r ON t._dummy = r._dummy
+  {% for t, r in dims -%}
+     AND t = r
+  {% endfor -%}
+)
+
+SELECT * FROM joined
+WHERE {{ fail_if }}
+
+{% endtest %}
+```
+
+Example usage:
+```yml
+# models/customer_value_pm.yml
+models:
+  - name: customer_value_pm
+
+    data_tests:
+      - metric_conserved:
+          name: customer_value_pm-conserves-revenue-customer_value_csuite
+          _metric: SUM(lifetime_value_usd)
+          ref_model: ref("customer_value_csuite")
+          _reference: SUM(revenue)
+          _residual: SAFE_DIVIDE(_metric - _reference, _reference)
+          fail_if: | 
+            _residual >= 0.1
+          config:
+            where: |
+              acquisition_channel IN ("GoogleAds", "MicrosoftAds")
+```
+
+Notes:
+- The test definition sets `test_metric_conserved` as a custom tag in the config for easy selection using dbt selectors.
+- dbt will generate a test name if there isn't one, but I recommend having a naming standard.
