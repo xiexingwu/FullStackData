@@ -40,16 +40,133 @@
 
     
   <h1>Data quality testing in dbt</h1>
-  <div class="post"></div>
+  <div class="post"><h1>Introduction</h1><p>This blog is aimed at sharing some novel approaches to data quality testing. We’ll be using dbt as our tool throughout the article, but the ideas should be equally usable on tools like SQLMesh or on your favourite RDBMS.</p><p>So what is data quality, and how would a company know whether they have achieved good data quality? For many companies that have some form of basic data quality control, data quality often applies at the data ingestion stage, checking for missing fields, valid timestamps, duplicate records, etc. For those with more investment, they will perhaps check that the data has the expected schema at various stages of the data pipeline. They may even employ testing frameworks like <a href="https://hub.getdbt.com/metaplane/dbt_expectations/latest/" target="_blank">dbt_expectations</a> to assert stronger properties on the contents of the table. However, most of these data quality checks are targeted towards the technical teams (e.g. engineering & data analytics teams). What they don’t do is inform the business how much impact the data issue has on their decision making.</p><p>In my opinion, here are a few qualitative signs of a company good data quality:</p><ul><li>The business stakeholders (e.g. product managers, leadership) actually make informed decisions based on the data presented to them. This is assuming they claim to be data-driven.</li><li>The business stakeholders don’t frequently bother the data & analytics team with questions like “can we trust this number?” They are proactively notified of known data issues and know how their decision making might be impacted.</li><li>The business stakeholders don’t complain about different dashboards showing different numbers for the same metric.</li></ul><p>So what more can the data & analytics teams do to help the business get to this stage? We need even more expressive data tests that reflect what the business stakeholders expect from their data.</p><h1>Consistency</h1><p>“Consistency” here means that a metric computed in one table/dashboard will be the same if computed in another, within some accepted tolerance. For example, the BI dashboard used by a product manager might have the YTD earnings of their product, and they expect the C-suite’s dashboard to show the same number (or within 1% difference).</p><p>Let’s consider a more concrete (albeit contrived) example based on the following table <code>customer_data</code>. This table might be a cleaned fact table that other business functions are expected to use (as opposed to reading directly from a raw data stream).</p><p><strong>customer_data</strong></p><table><tr><th>customer_id</th><th>user_country</th><th>acquisition_channel</th><th>lifetime_value_usd</th></tr><tr><td>1</td><td>US</td><td>GoogleAds</td><td>5.0</td></tr><tr><td>2</td><td>CA</td><td>GoogleAds</td><td>3.0</td></tr><tr><td>3</td><td>US</td><td>MicrosoftAds</td><td>5.0</td></tr><tr><td>4</td><td>AU</td><td>Unknown</td><td>2.0</td></tr></table><p>The C-suite may have a table built to sum the total lifetime value of all customers, grouped by user_country and filtered by known ads networks:</p><pre><code class="sql"><span class="keyword">CREATE</span> <span class="keyword_operator">OR</span> <span class="keyword">REPLACE</span> TABLE `customer_value_csuite`
+<span class="keyword">SELECT</span>
+  <span class="field">user_country</span><span class="punctuation_delimiter">,</span>
+  <span class="function_call type">SUM</span><span class="punctuation_bracket">(</span><span class="field">lifetime_value_usd</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">revenue</span>
+<span class="keyword">FROM</span> <span class="type">`customer_data`</span>
+<span class="keyword">WHERE</span> <span class="field">acquisition_channel</span> <span class="keyword_operator">IN</span> <span class="punctuation_bracket">(</span><span class="string float number">&quot;GoogleAds&quot;</span><span class="punctuation_delimiter">,</span> <span class="string float number">&quot;MicrosoftAds&quot;</span><span class="punctuation_bracket">)</span>
+<span class="keyword">GROUP</span> <span class="keyword_operator">BY</span> <span class="field">user_country</span>
+</code></pre>
+<p>The product manager may have a similar table, but simply grouped by acquisition_channel:</p><pre><code class="sql"><span class="keyword">CREATE</span> <span class="keyword_operator">OR</span> <span class="keyword">REPLACE</span> TABLE `customer_value_pm`
+<span class="keyword">SELECT</span>
+  <span class="field">acquisition_channel</span><span class="punctuation_delimiter">,</span>
+  <span class="function_call type">SUM</span><span class="punctuation_bracket">(</span><span class="field">lifetime_value_usd</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">lifetime_value_usd</span>
+<span class="keyword">FROM</span> <span class="type">`customer_data`</span>
+<span class="keyword">GROUP</span> <span class="keyword_operator">BY</span> <span class="field">acquisition_channel</span>
+</code></pre>
+<p>To check for data consistency against the C-suite table, the product manager might have their team write a query like this:</p><pre><code class="sql"><span class="keyword">WITH</span>
+tgt <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
+  <span class="keyword">SELECT</span>
+    <span class="function_call type">SUM</span><span class="punctuation_bracket">(</span><span class="field">lifetime_value_usd</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric</span>
+  <span class="keyword">FROM</span> <span class="type">`customer_value_pm`</span>
+  <span class="keyword">WHERE</span> <span class="field">acquisition_channel</span> <span class="keyword_operator">IN</span> <span class="punctuation_bracket">(</span><span class="string float number">&quot;GoogleAds&quot;</span><span class="punctuation_delimiter">,</span> <span class="string float number">&quot;MicrosoftAds&quot;</span><span class="punctuation_bracket">)</span>
+<span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
+ref <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
+  <span class="keyword">SELECT</span>
+    <span class="function_call type">SUM</span><span class="punctuation_bracket">(</span><span class="field">revneue</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">reference</span>
+  <span class="keyword">FROM</span> <span class="type">`customer_value_csuite`</span>
+<span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
+joined <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
+  <span class="keyword">SELECT</span>
+    <span class="field">metric</span><span class="punctuation_delimiter">,</span>
+    <span class="field">reference</span><span class="punctuation_delimiter">,</span>
+    <span class="string float number">100</span> <span class="operator">*</span> <span class="function_call type">SAFE_DIVIDE</span><span class="punctuation_bracket">(</span><span class="field">metric</span> <span class="operator">-</span> <span class="field">reference</span><span class="punctuation_delimiter">,</span> <span class="field">reference</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">error_pct</span>
+  <span class="keyword">FROM</span> <span class="type">tgt</span>
+  <span class="keyword">JOIN</span> <span class="type">ref</span> <span class="keyword_operator">ON</span> <span class="string boolean float number">TRUE</span>
+<span class="punctuation_bracket">)</span>
+
+<span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="type">joined</span>
+<span class="keyword">WHERE</span> <span class="function_call type">ABS</span><span class="punctuation_bracket">(</span><span class="field">error_pct</span><span class="punctuation_bracket">)</span> <span class="operator">&gt;=</span> <span class="string float number">1</span>
+</code></pre>
+<p>This query follows the convention of <a href="https://docs.getdbt.com/docs/build/data-tests#overview" target="_blank">dbt tests</a> where failing rows are returned, i.e. the test is deemed passing if the query returns no rows.</p><h2>Example failure modes</h2><p>WIP.</p><h2>Choice of testing nodes</h2><p>Instead of directly testing between the two <code>customer_value_*</code> tables, we could instead test that each of them are consistent with the upstream table <code>customer_data</code>. Pros:</p><ul><li>As more downstream tables are built off <code>customer_data</code> with the consistency test, we can expect tha consistency quality to transfer to all of them. Cons:</li><li>In the case of a data issue that might cause one of the tests to break, it’s less obvious which two user-facing tables becomes inconsistent.</li></ul><p>When one downstream is no longer a strict subset of the other… Upstream consistency can still be tested.</p><h2>Generalisation in dbt</h2><p>This is what the test would looks like in dbt as a generic test. I’ve named it <code>metric_conserved</code> in the spirit of conservation laws in physics.</p><pre><code class="sql"><span class="comment spell">-- tests/generic/metric_conserved.sql</span>
+{<span class="operator">%</span> test metric_conserved<span class="punctuation_bracket">(</span>
+  model<span class="punctuation_delimiter">,</span>
+  dims<span class="punctuation_delimiter">,</span>
+  _metric<span class="punctuation_delimiter">,</span>
+  ref_model<span class="punctuation_delimiter">,</span>
+  _reference<span class="operator">=</span><span class="keyword">None</span><span class="punctuation_delimiter">,</span>
+  _residual<span class="operator">=</span>&quot;_metric - _reference&quot;<span class="punctuation_delimiter">,</span>
+  fail_if<span class="operator">=</span>&quot;_residual IS NULL OR _residual != 0&quot;
+<span class="punctuation_bracket">)</span> <span class="operator">-</span><span class="operator">%</span>}
+
+{{ config<span class="punctuation_bracket">(</span>tags<span class="operator">=</span>[&quot;test_metric_conserved&quot;]<span class="punctuation_bracket">)</span> }}
+
+{<span class="operator">#</span> parse arguments <span class="operator">#</span>}
+{<span class="operator">%</span> <span class="keyword">set</span> <span class="type">_reference</span> <span class="operator">=</span> _metric if _reference <span class="keyword">is</span> <span class="keyword">none</span> <span class="conditional">else</span> _reference <span class="operator">-</span><span class="operator">%</span>}
+
+{<span class="operator">#</span> unzip dimension pairs <span class="keyword">to</span> target<span class="operator">/</span>reference <span class="operator">#</span>}
+{<span class="operator">%</span> <span class="keyword">set</span> <span class="type">t_dims</span> <span class="operator">=</span> [] <span class="operator">-</span><span class="operator">%</span>}
+{<span class="operator">%</span> <span class="keyword">set</span> <span class="type">r_dims</span> <span class="operator">=</span> [] <span class="operator">-</span><span class="operator">%</span>}
+{<span class="operator">%</span> <span class="keyword">for</span> t<span class="punctuation_delimiter">,</span> r <span class="keyword_operator">in</span> dims <span class="operator">-</span><span class="operator">%</span>}
+{<span class="operator">%</span> <span class="keyword_operator">do</span> t_dims<span class="punctuation_delimiter">.</span>append<span class="punctuation_bracket">(</span>t<span class="punctuation_bracket">)</span> <span class="operator">-</span><span class="operator">%</span>}
+{<span class="operator">%</span> <span class="keyword_operator">do</span> r_dims<span class="punctuation_delimiter">.</span>append<span class="punctuation_bracket">(</span>r<span class="punctuation_bracket">)</span> <span class="operator">-</span><span class="operator">%</span>}
+{<span class="operator">%</span> endfor <span class="operator">-</span><span class="operator">%</span>}
+
+<span class="comment spell">-- _dummy column is for when there are no explicit grouping dimensions</span>
+<span class="keyword">WITH</span>
+tgt <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
+  <span class="keyword">SELECT</span>
+    {{ <span class="field">_metric</span> }} <span class="keyword">AS</span> <span class="variable">_metric</span><span class="punctuation_delimiter">,</span>
+    <span class="string float number">1</span> <span class="keyword">AS</span> <span class="variable">_dummy</span><span class="punctuation_delimiter">,</span>
+    {{ <span class="field">t_dims</span> <span class="operator">|</span> <span class="function_call type">join</span><span class="punctuation_bracket">(</span><span class="string float number">&quot;,&quot;</span><span class="punctuation_bracket">)</span> }}
+  <span class="keyword">FROM</span> {{ <span class="type">model</span> }}
+  <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span>
+    {{ <span class="punctuation_bracket">(</span>[<span class="string float number">&quot;_dummy&quot;</span>] <span class="operator">+</span> <span class="field">t_dims</span><span class="punctuation_bracket">)</span> <span class="operator">|</span> <span class="function_call type">join</span><span class="punctuation_bracket">(</span><span class="string float number">&quot;,&quot;</span><span class="punctuation_bracket">)</span> }}
+<span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
+ref <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
+  <span class="keyword">SELECT</span>
+    {{ <span class="field">_reference</span> }} <span class="keyword">AS</span> <span class="variable">_reference</span><span class="punctuation_delimiter">,</span>
+    <span class="string float number">1</span> <span class="keyword">AS</span> <span class="variable">_dummy</span><span class="punctuation_delimiter">,</span>
+    {{ <span class="field">r_dims</span> <span class="operator">|</span> <span class="function_call type">join</span><span class="punctuation_bracket">(</span><span class="string float number">&quot;,&quot;</span><span class="punctuation_bracket">)</span> }}
+  <span class="keyword">FROM</span> {{ <span class="type">ref_model</span> }}
+  <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span>
+    {{ <span class="punctuation_bracket">(</span>[<span class="string float number">&quot;_dummy&quot;</span>] <span class="operator">+</span> <span class="field">r_dims</span><span class="punctuation_bracket">)</span> <span class="operator">|</span> <span class="function_call type">join</span><span class="punctuation_bracket">(</span><span class="string float number">&quot;,&quot;</span><span class="punctuation_bracket">)</span> }}
+<span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
+joined <span class="keyword">AS</span><span class="punctuation_bracket">(</span>
+  <span class="keyword">SELECT</span>
+    <span class="type">t</span><span class="punctuation_delimiter">.</span><span class="operator">*</span> <span class="keyword_operator">EXCEPT</span><span class="punctuation_bracket">(</span>_dummy<span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
+    r<span class="punctuation_delimiter">.</span>_reference<span class="punctuation_delimiter">,</span>
+    {{ _residual }} <span class="keyword">AS</span> _residual<span class="punctuation_delimiter">,</span>
+  <span class="keyword">FROM</span> tgt <span class="keyword">AS</span> t
+  <span class="keyword">LEFT</span> <span class="keyword">JOIN</span> ref <span class="keyword">AS</span> r <span class="keyword_operator">ON</span> t<span class="punctuation_delimiter">.</span>_dummy <span class="operator">=</span> r<span class="punctuation_delimiter">.</span>_dummy
+  {<span class="operator">%</span> <span class="keyword">for</span> t<span class="punctuation_delimiter">,</span> r <span class="keyword_operator">in</span> dims <span class="operator">-</span><span class="operator">%</span>}
+     <span class="keyword_operator">AND</span> t <span class="operator">=</span> r
+  {<span class="operator">%</span> endfor <span class="operator">-</span><span class="operator">%</span>}
+<span class="punctuation_bracket">)</span>
+
+<span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="type">joined</span>
+<span class="keyword">WHERE</span> {{ <span class="field">fail_if</span> }}
+
+{<span class="operator">%</span> <span class="field">endtest</span> <span class="operator">%</span>}
+</code></pre>
+<p>Example usage:</p><pre><code class="yml"><span class="comment"># models/customer_value_pm.yml</span>
+<span class="string property">models</span><span class="punctuation_delimiter">:</span>
+  <span class="punctuation_delimiter">-</span> <span class="string property">name</span><span class="punctuation_delimiter">:</span> <span class="string">customer_value_pm</span>
+
+    <span class="string property">data_tests</span><span class="punctuation_delimiter">:</span>
+      <span class="punctuation_delimiter">-</span> <span class="string property">metric_conserved</span><span class="punctuation_delimiter">:</span>
+          <span class="string property">name</span><span class="punctuation_delimiter">:</span> <span class="string">customer_value_pm-conserves-revenue-customer_value_csuite</span>
+          <span class="string property">_metric</span><span class="punctuation_delimiter">:</span> <span class="string">SUM(lifetime_value_usd)</span>
+          <span class="string property">ref_model</span><span class="punctuation_delimiter">:</span> <span class="string">ref(&quot;customer_value_csuite&quot;)</span>
+          <span class="string property">_reference</span><span class="punctuation_delimiter">:</span> <span class="string">SUM(revenue)</span>
+          <span class="string property">_residual</span><span class="punctuation_delimiter">:</span> <span class="string">SAFE_DIVIDE(_metric - _reference, _reference)</span>
+          <span class="string property">fail_if</span><span class="punctuation_delimiter">:</span> <span class="string punctuation_delimiter">|</span><span class="string"> 
+            _residual &gt;= 0.1</span>
+          <span class="string property">config</span><span class="punctuation_delimiter">:</span>
+            <span class="string property">where</span><span class="punctuation_delimiter">:</span> <span class="string punctuation_delimiter">|</span><span class="string">
+              acquisition_channel IN (&quot;GoogleAds&quot;, &quot;MicrosoftAds&quot;)
+</span></code></pre>
+<p>Notes:</p><ul><li>The test definition sets <code>test_metric_conserved</code> as a custom tag in the config for easy selection using dbt selectors.</li><li>dbt will generate a test name if there isn’t one, but I recommend having a naming standard.</li></ul></div>
   <div id="prev-next">
     <div>
       <a href="/blog/1-BQPipe/">
         ←
-        <span>BigQuery Pipe Syntax: Cleaner SQL</span>
+        <span>Google Pipe Syntax: Cleaner SQL</span>
       </a>
     </div>
     <div>
-      <a href="/blog/3-BQPipe-dbt/">
+      <a href="/blog/3-BQPipe-dbt-testing/">
         <span>Powerful dbt tests using BigQuery Pipe Syntax</span>
         →
       </a>
