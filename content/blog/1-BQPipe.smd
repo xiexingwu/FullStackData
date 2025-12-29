@@ -3,8 +3,13 @@
 .date = @date("2025-05-23T00:00:00"),
 .author = "FullStackDev",
 .layout = "blog/post.shtml",
-.tags = ["BigQuery", "SQL"]
+.tags = ["BigQuery", "SQL"],
+.custom = {
+  .last_edit = @date("2025-12-29T00:00:00"),
+}
 --- 
+
+- **2025-12-29** Update: This article may be a bit dense and theoretical for the purposes of learning Pipe syntax SQL. Consider starting [here]($link.page("blog/4-pipe-tutorial-1")) for some hands on examples that you can follow along to learn Pipe syntax SQL.
 
 # Introduction
 
