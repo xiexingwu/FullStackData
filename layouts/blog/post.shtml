@@ -23,6 +23,14 @@
 <title id="title" >FSDD - <ctx :text="$page.title"></ctx></title>
 <body id="body">
   <h1 :text="$page.title"></h1>
+  <div class="post-date">
+    Published:
+    <span :text="$page.date.format('2006 Jan 02')"></span>
+  </div>
+  <div :if="$page.custom.get?('last_edit')" class="post-date">
+    Last edited:
+    <span :text="$page.custom.get('last_edit').format('2006 Jan 02')"></span>
+  </div>
   <div class="post" :html="$page.content()"></div>
   <div id="prev-next">
     <div :if="$page.prevPage?()">
