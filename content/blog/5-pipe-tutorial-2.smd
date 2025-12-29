@@ -1,0 +1,9 @@
+---
+.title = "Google Pipe Query Syntax Tutorial - 1",
+.date = @date("2025-12-29T00:00:00"),
+.author = "FullStackDev",
+.layout = "blog/post.shtml",
+.tags = ["BigQuery", "SQL"],
+.custom = { }
+--- 
+
