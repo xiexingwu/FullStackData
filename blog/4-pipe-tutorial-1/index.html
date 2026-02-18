@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head id="head">
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1">
+    <title id="title">FSDD - Pipe Syntax Tutorial: Lesson 1</title>
+    <link type="text/css" rel="stylesheet" href="/style.css">
+    <link type="text/css" rel="stylesheet" href="/highlight.css">
+    
+  <style>
+    #prev-next {
+     display: flex;
+     flex-direction: row;
+     justify-content: space-between;
+     margin-top: 40px;
+    }
+
+    figure {
+      align-self: center;
+      text-align: center;
+      font-style: italic;
+    }
+
+    .post {
+      display:flex;
+      flex-direction: column;
+    }
+  </style>
+
+  </head>
+  <body id="body">
+    <h1 class="site-title">The Full Stack Data Dev</h1>
+    <nav>
+      <a href="/">Home</a>
+       &nbsp; • &nbsp;
+      <a href="/about/">About</a>
+       &nbsp; • &nbsp;
+      <a href="/blog/">Blog</a>
+    </nav>
+
+    
+  <h1>Pipe Syntax Tutorial: Lesson 1</h1>
+  <div class="post-date">
+    Published:
+    <span>2025 Dec 29</span>
+  </div>
+  <div class="post-date"></div>
+  <div class="post"><h1>Introduction</h1><p>I have been using Google’s <a href="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/pipe-syntax" target="_blank">pipe query syntax</a> (henceforth just “pipe syntax”) as my daily driver in work for about a year now. I find myself a lot more productive when developing queries, and find it a lot easier to underestand queries that I wrote several months ago when reviewing them.</p><p>I want to start documenting my learnings and experience in the form of hands-on exercises that hopefully readers can follow along with.</p><p>Any and all feedback is welcome at any time. Please email them to: michael[at]fullstackdata.dev</p><h1>Lessons</h1><p>Quick links for readers to access other lessons.</p><ol><li>Introduction (this article)</li><li><a href="/blog/5-pipe-tutorial-2/">WIP</a></li></ol><h1>Prerequisites</h1><p>I will assume the reader is familiar with basic SQL concepts (e.g. joins, aggregation, CTEs, structs, arrays) and is willing to reference Google’s SQL <a href="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax" target="_blank">docs</a> or other reading materials as needed. Most importantly, I will assume the reader is not a complete novice in data modelling using SQL. After all, the intended audience for the tutorial’s full scope are analysts/engineers that find conventional SQL unnecessarily tedious to develop and maintain for complex data needs. There’s not much point in learning pipe syntax if all you need is to count or sum over a column.</p><p>Some readers may find that the difficulty of the exercises ramp up pretty quickly. I expect this to be the case since I need non-trivial (sometimes complex) examples for data modelling exercises to demonstrate some more powerful uses of Pipe syntax. Furthermore, working with an unfamiliar dataset almost always comes at the cost of additional headspace required, so don’t be discouraged and reread the lessons at your own pace.</p><h1>Setting up a BigQuery sandbox</h1><p>Since this series of lessons is intended to be hands-on, I encourage the reader to setup a sandbox in BigQuery to play around with the queries or even attempt to develop the query before reading the sample solution. See Google’s guide <a href="https://docs.cloud.google.com/bigquery/docs/sandbox" target="_blank">here</a> on setting up a sandbox.</p><p>We will be querying Google’s public dataset <code>bigquery-public-data.google_analytics_sample</code> throughout the lessons. To test you have setup your sandbox correctly, run the following query in the BigQuery console and check that the query returns 2556.</p><pre><code class="sql">FROM `bigquery<span class="operator">-</span>public<span class="operator">-</span><span class="keyword">data</span><span class="punctuation_delimiter">.</span>google_analytics_sample<span class="punctuation_delimiter">.</span>ga_sessions_20170801`
+|<span class="operator">&gt;</span> AGGREGATE
+    SUM<span class="punctuation_bracket">(</span>totals<span class="punctuation_delimiter">.</span>visits<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> total_visits<span class="punctuation_delimiter">,</span>
+</code></pre>
+<p>While you can choose to learn more about the dataset in Google’s <a href="https://support.google.com/analytics/answer/4419694" target="_blank">guide</a>, I don’t expect you to, and will provide my interpretation of the data where needed.</p><h1></h1></div>
+  <div id="prev-next">
+    <div>
+      <a href="/blog/3-BQPipe-dbt-testing/">
+        ←
+        <span>Powerful dbt tests using BigQuery Pipe Syntax</span>
+      </a>
+    </div>
+    <div>
+      <a href="/blog/5-pipe-tutorial-2/">
+        <span>Google Pipe Query Syntax Tutorial - 1</span>
+        →
+      </a>
+    </div>
+  </div>
+
+
+    <footer>
+      <hr>
+    </footer>
+  </body>
+</html>
