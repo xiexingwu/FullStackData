@@ -45,6 +45,10 @@
     <span>2025 May 23</span>
   </div>
   <div class="post-date">
+    Written by:
+    <span>Michael</span>
+  </div>
+  <div class="post-date">
     Last edited:
     <span>2025 Dec 29</span>
   </div>
@@ -121,7 +125,7 @@ more_logic <span class="keyword">AS</span> <span class="punctuation_bracket">(</
 bmi <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
   FROM existing_logic
   |<span class="operator">&gt;</span> <span class="keyword">SET</span>
-      history <span class="operator">=</span> <span class="function_call">ARRAY</span><span class="punctuation_bracket">(</span><span class="punctuation_bracket">(</span>
+      <span class="type">history</span> <span class="operator">=</span> ARRAY<span class="punctuation_bracket">(</span><span class="punctuation_bracket">(</span>
           FROM UNNEST<span class="punctuation_bracket">(</span>history<span class="punctuation_bracket">)</span>
           |<span class="operator">&gt;</span> EXTEND weight<span class="operator">/</span>POWER<span class="punctuation_bracket">(</span>height<span class="punctuation_delimiter">,</span> 2<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> BMI
           |<span class="operator">&gt;</span> <span class="keyword">SELECT</span> <span class="field">AS</span> <span class="variable">STRUCT</span> <span class="operator">*</span>
@@ -168,9 +172,9 @@ cte1 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
       <span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 
-<span class="field">cte3</span> <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
-  <span class="keyword">FROM</span> <span class="type">cte1</span> <span class="comment spell">-- this appears immediatley below `cte3 AS (`</span>
-  <span class="operator">|</span><span class="operator">&gt;</span> <span class="keyword">SELECT</span>
+cte3 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
+  FROM cte1 <span class="comment spell">-- this appears immediatley below `cte3 AS (`</span>
+  |<span class="operator">&gt;</span> <span class="keyword">SELECT</span>
       <span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span>
 <span class="punctuation_bracket">)</span>
 
@@ -185,7 +189,7 @@ cte1 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
   <span class="function_call type">COUNTIF</span><span class="punctuation_bracket">(</span><span class="field">some_criteria</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric_1</span><span class="punctuation_delimiter">,</span>
   <span class="function_call type">ARRAY_AGG</span><span class="punctuation_bracket">(</span><span class="field">some_expression</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric_2</span><span class="punctuation_delimiter">,</span>
 <span class="field">FROM</span> <span class="variable">dataset</span><span class="punctuation_delimiter">.</span><span class="keyword">table</span><span class="punctuation_delimiter">,</span> <span class="function_call type">UNNEST</span><span class="punctuation_bracket">(</span><span class="function_call">array</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">a</span>
-WHERE some_filter
+<span class="keyword">WHERE</span> some_filter
 <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span> dim_1<span class="punctuation_delimiter">,</span> <span class="field">dim_2</span>
 <span class="variable">HAVING</span> metric_1 <span class="operator">&gt;</span> 0
 </code></pre>
@@ -341,17 +345,17 @@ group_by_column_example <span class="keyword">AS</span> <span class="punctuation
   FROM datset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
   |<span class="operator">&gt;</span> AGGREGATE
       COUNT<span class="punctuation_bracket">(</span>1<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric<span class="punctuation_delimiter">,</span>
-    <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span>
+    GROUP BY
       dim1<span class="punctuation_delimiter">,</span>
       dim2 <span class="keyword">AS</span> dim_2<span class="punctuation_delimiter">,</span> <span class="comment spell">-- Column alias + trailing comma. Awesome!</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 
 group_by_all_example <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
-  FROM dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
+  <span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
   |<span class="operator">&gt;</span> AGGREGATE
       COUNT<span class="punctuation_bracket">(</span>1<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric1<span class="punctuation_delimiter">,</span>
       metric2<span class="punctuation_delimiter">,</span> <span class="comment spell">-- BQ Engine will remind you to aggregate this</span>
-    <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span>
+    GROUP BY
       dim1
 <span class="punctuation_bracket">)</span>
 </code></pre>
