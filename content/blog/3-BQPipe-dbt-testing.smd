@@ -1,8 +1,8 @@
 ---
-.title = "Powerful dbt tests using BigQuery Pipe Syntax",
+.title = "Powerful dbt tests using BigQuery Pipe Syntax (WIP)",
 .date = @date("2025-05-25T00:00:00"),
-.author = "FullStackDev",
+.author = "Michael",
 .layout = "blog/post.shtml",
 --- 
 
-Work in progress.
+# Work in progress

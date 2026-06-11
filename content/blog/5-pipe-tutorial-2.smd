@@ -1,9 +1,10 @@
 ---
-.title = "Google Pipe Query Syntax Tutorial - 1",
+.title = "Pipe Syntax Tutorial: Lesson 2 (WIP)",
 .date = @date("2025-12-29T00:00:00"),
-.author = "FullStackDev",
+.author = "Michael",
 .layout = "blog/post.shtml",
 .tags = ["BigQuery", "SQL"],
 .custom = { }
 --- 
 
+# Work In Progress

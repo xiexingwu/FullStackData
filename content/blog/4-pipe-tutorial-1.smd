@@ -1,7 +1,7 @@
 ---
 .title = "Pipe Syntax Tutorial: Lesson 1",
 .date = @date("2025-12-29T00:00:00"),
-.author = "FullStackDev",
+.author = "Michael",
 .layout = "blog/post.shtml",
 .tags = ["BigQuery", "SQL"],
 .custom = { }
@@ -41,4 +41,5 @@ FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
 ```
 While you can choose to learn more about the dataset in Google's [guide](https://support.google.com/analytics/answer/4419694), I don't expect you to, and will provide my interpretation of the data where needed.
 
-# 
+# Exercise
+## Work In progress

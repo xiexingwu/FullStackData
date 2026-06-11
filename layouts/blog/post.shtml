@@ -27,6 +27,10 @@
     Published:
     <span :text="$page.date.format('2006 Jan 02')"></span>
   </div>
+  <div class="post-date">
+    Written by:
+    <span :text="$page.author"></span>
+  </div>
   <div :if="$page.custom.get?('last_edit')" class="post-date">
     Last edited:
     <span :text="$page.custom.get('last_edit').format('2006 Jan 02')"></span>
