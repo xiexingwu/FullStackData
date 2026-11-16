@@ -1,0 +1,25 @@
+---
+.title = "Jessie",
+.date = .date("2026-11-15T00:00:00"),
+// Author pages list themselves as their author, so the layout can read
+// this page's key with `$page.authors.at(0)`. The key must match the filename.
+.authors = ["jessie"],
+// The bio is in a $section so its headings can start at `###` and nest under
+// the author's name on the About page. Zine skips the heading-level check
+// inside sections.
+.layout = "authors/author.shtml",
+// LinkedIn handle only; the layout builds the full profile URL.
+.custom = {
+    "linkedin": "jessie-sj-wang",
+},
+---
+
+[]($section)
+
+I started working in the Data & AI space as a technologist since 2019.
+Having started my career in a tech consultancy, I have taken on a wide variety of roles across multiple industries (FMCG, banking, automotive).
+
+I really enjoy mathematical optimisation problems and I wish their reputation in the tech industry is as good as AI.
+
+## Projects
+- [BabySprout](https://github.com/JessieW-FSD/Baby-Sprout), an iOS app to help parents log and monitor their babies' routine.

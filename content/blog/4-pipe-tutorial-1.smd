@@ -1,7 +1,7 @@
 ---
 .title = "Pipe Syntax Tutorial: Lesson 1",
-.date = @date("2025-12-29T00:00:00"),
-.author = "Michael",
+.date = .date("2025-12-29T00:00:00"),
+.authors = ["michael"],
 .layout = "blog/post.shtml",
 .tags = ["BigQuery", "SQL"],
 .custom = { }
@@ -19,7 +19,7 @@ michael\[at\]fullstackdata.dev
 # Lessons
 Quick links for readers to access other lessons.
 1. Introduction (this article)
-2. [WIP]($link.page("blog/5-pipe-tutorial-2"))
+2. [Aggregation and arrays]($link.page("blog/5-pipe-tutorial-2"))
 
 # Prerequisites
 I will assume the reader is familiar with basic SQL concepts (e.g. joins, aggregation, CTEs, structs, arrays) and is willing to reference Google's SQL [docs](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax) or other reading materials as needed.
@@ -41,5 +41,246 @@ FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
 ```
 While you can choose to learn more about the dataset in Google's [guide](https://support.google.com/analytics/answer/4419694), I don't expect you to, and will provide my interpretation of the data where needed.
 
-# Exercise
-## Work In progress
+# Exercises
+Exercises will start with a brief section explaining what new feature/operator in Pipe syntax we'll be introducing.
+They will then be followed by the task (i.e. "the business question"), the expected result, and a sample solution.
+All exercises query the same table as the setup check above, where each row is one session (a visit to the Google Merchandise Store).
+
+## Exercise 1: Conversion rate by device
+### Lesson
+A pipe syntax query starts with `FROM`.
+`FROM table` on its own is already a complete query, which returns every column of the table, like `SELECT * FROM table` does.
+
+Each `|>` (a "pipe") passes the table produced so far to the next operator.
+Every operator takes a table and produces a new table, so the query reads from top to bottom in the order it runs.
+
+First up is `|> AGGREGATE`, which is the pipe syntax version of a `SELECT ... GROUP BY` query in standard SQL.
+```sql
+FROM table
+|> AGGREGATE
+    COUNT(1) AS metric_1, -- This should be pretty familiar
+    -- All aggregate functions come *before* GROUP BY
+  GROUP BY
+    -- All grouping dimensions come *after* GROUP BY
+    dimension_1,
+    CAST(dimension_2 AS STRING) AS new_dimension, -- You can create new dimensions just like usual. Don't go crazy though!
+    dimension_3 DESC, -- You can add sorting logic too. But use |> ORDER BY for multi-column sorts for readability.
+    dimension_4, -- Optional trailing comma, yay!
+```
+
+Next up is `|> EXTEND`, which adds new columns to the end of the table, like `SELECT *, ...` in standard SQL.
+```sql
+FROM table
+|> EXTEND
+    metric_1 / metric_2 AS ratio, -- Can use any column from an earlier step
+    UPPER(dimension_1) AS dimension_1_upper, -- Add as many columns as you like
+```
+
+Finally, `|> ORDER BY` sorts the table, the same as `ORDER BY` in standard SQL.
+```sql
+FROM table
+|> ORDER BY
+    metric_1 DESC,
+    dimension_1, -- Trailing comma here too
+```
+
+Here's an example query tying everything together: count sessions and hits by traffic medium, compute the average hits per session, and order by highest session count first.
+```sql
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+|> AGGREGATE
+    COUNT(*) AS sessions,
+    SUM(totals.hits) AS hits,
+  GROUP BY
+    trafficSource.medium AS medium
+|> EXTEND hits / sessions AS hits_per_session
+|> ORDER BY sessions DESC
+```
+
+| medium | sessions | hits | hits_per_session |
+|---|---|---|---|
+| (none) | 2166 | 12291 | 5.67 |
+| referral | 313 | 708 | 2.26 |
+| affiliate | 52 | 149 | 2.87 |
+| cpm | 15 | 64 | 4.27 |
+| organic | 10 | 21 | 2.1 |
+
+### Task
+For each device category (`device.deviceCategory`), find:
+- the number of sessions,
+- the total number of pageviews (`totals.pageviews`),
+- the number of converting sessions, which are sessions with at least one transaction (`totals.transactions > 0`),
+- the conversion rate, which is converting sessions divided by sessions.
+
+Sort the result by the number of sessions, highest first.
+
+Expected result below:
+
+| device_category | sessions | pageviews | converting_sessions | conversion_rate |
+|---|---|---|---|---|
+| desktop | 1742 | 8329 | 41 | 0.0235 |
+| mobile | 725 | 2332 | 2 | 0.0028 |
+| tablet | 89 | 278 | 0 | 0.0 |
+
+&nbsp;
+>#### [Sample solution]($block.collapsible(false))
+>```sql
+>FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+>|> AGGREGATE
+>    COUNT(*) AS sessions,
+>    SUM(totals.pageviews) AS pageviews,
+>    COUNTIF(totals.transactions > 0) AS converting_sessions,
+>  GROUP BY
+>    device.deviceCategory AS device_category
+>|> EXTEND SAFE_DIVIDE(converting_sessions, sessions) AS conversion_rate
+>|> ORDER BY sessions DESC
+>```
+
+### Discussion
+In standard SQL, the conversion rate would need either a second CTE or a repeat of both aggregate expressions inside `SAFE_DIVIDE`.
+In pipe syntax, `|> EXTEND` can refer to the aggregated columns by name in the very next step.
+
+## Exercise 2: Conversion rate by channel, for engaged sessions
+### Lesson
+This time we only need `|> WHERE`, which filters rows, the same as `WHERE` in standard SQL.
+The difference is that it can appear anywhere in the query, as many times as you need, so pipe syntax doesn't need `HAVING`.
+```sql
+FROM table
+|> WHERE dimension_1 = 'x' -- Filters the rows of the table, like WHERE in standard SQL
+|> AGGREGATE
+    COUNT(1) AS metric_1,
+  GROUP BY
+    dimension_2,
+|> WHERE metric_1 > 100 -- Filters the aggregated rows, like HAVING in standard SQL
+```
+
+Here's an example query: filter for mobile sessions, count them by continent, and keep continents with at least 100 sessions.
+```sql
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+|> WHERE device.isMobile
+|> AGGREGATE
+    COUNT(*) AS sessions,
+  GROUP BY
+    geoNetwork.continent AS continent
+|> WHERE sessions >= 100
+```
+
+### Task
+Only consider sessions with more than one pageview.
+For each channel (`channelGrouping`), find the number of sessions, the number of converting sessions and the conversion rate rounded to 4 decimal places.
+Only keep channels with at least 20 sessions, and sort the result by conversion rate, highest first.
+
+Expected result below:
+
+| channelGrouping | sessions | converting_sessions | conversion_rate |
+|---|---|---|---|
+| Referral | 329 | 27 | 0.0821 |
+| Direct | 201 | 8 | 0.0398 |
+| Display | 27 | 1 | 0.037 |
+| Paid Search | 47 | 1 | 0.0213 |
+| Organic Search | 629 | 6 | 0.0095 |
+| Affiliates | 22 | 0 | 0.0 |
+| Social | 58 | 0 | 0.0 |
+
+&nbsp;
+>#### [Sample solution]($block.collapsible(false))
+>```sql
+>FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+>|> WHERE totals.pageviews > 1
+>|> AGGREGATE
+>    COUNT(*) AS sessions,
+>    COUNTIF(totals.transactions > 0) AS converting_sessions,
+>  GROUP BY
+>    channelGrouping
+>-- Order of WHERE/EXTEND below don't matter
+>|> WHERE sessions >= 20
+>|> EXTEND ROUND(SAFE_DIVIDE(converting_sessions, sessions), 4) AS conversion_rate
+>|> ORDER BY conversion_rate DESC
+>```
+
+### Discussion
+Every line that changes the number of rows starts with `|> WHERE` or `|> AGGREGATE`, and they run from top to bottom.
+As an extra exercise, write the same query in standard SQL.
+Notice that `WHERE`, `GROUP BY` and `HAVING` are spread around the `SELECT` list, and the reader has to remember the order in which SQL applies them.
+
+## Exercise 3: Sessions by hour of day
+### Lesson
+First up is `|> SELECT`, which keeps only the columns you list, like the `SELECT` list in standard SQL.
+```sql
+FROM table
+|> SELECT
+    dimension_1,
+    struct_1.field_1, -- The new column is named after the field, i.e. field_1
+    metric_1 * 100 AS metric_1_pct, -- Expressions and aliases work as usual
+```
+
+Next up is `|> SET`, which replaces the values of existing columns, like `SELECT * REPLACE (...)` in standard SQL.
+The syntax is no longer `new_definition AS column_name`. Instead, write `column_name = new_definition`.
+```sql
+FROM table
+|> SET
+    metric_1 = IFNULL(metric_1, 0),
+    dimension_1 = UPPER(dimension_1),
+    -- new_column = 1, -- Error! SET only replaces existing columns. Use EXTEND to add new ones.
+```
+
+Then there's `|> DROP`, which removes columns, like `SELECT * EXCEPT (...)` in standard SQL.
+You won't need it for this exercise, but it often appears next to `SET`.
+```sql
+FROM table
+|> DROP
+    dimension_1,
+    metric_1,
+```
+
+Finally, `|> LIMIT` keeps only the first few rows, the same as `LIMIT` in standard SQL.
+
+Here's an example query tying everything together: keep three columns, replace missing pageviews with 0, drop `visitNumber`, and show the first 3 rows.
+```sql
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+|> SELECT visitId, visitNumber, totals.pageviews
+|> SET pageviews = IFNULL(pageviews, 0)
+|> DROP visitNumber
+|> LIMIT 3
+```
+
+### Task
+`visitStartTime` is the start of the session in seconds since the Unix epoch.
+Convert it to a timestamp, find the hour of day in Los Angeles time (`'America/Los_Angeles'`), and count the sessions and pageviews in each hour.
+Sort the result by hour, earliest first.
+
+Expected result below (excerpt):
+
+| local_hour | sessions | pageviews |
+|---|---|---|
+| 0 | 96 | 372 |
+| 1 | 69 | 179 |
+| 2 | 73 | 168 |
+| ...|...|...|
+| 22 | 96 | 389 |
+| 23 | 91 | 297 |
+
+&nbsp;
+>#### [Sample solution]($block.collapsible(false))
+>```sql
+>FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+>|> SELECT visitStartTime, totals.pageviews
+>|> SET visitStartTime = TIMESTAMP_SECONDS(visitStartTime)
+>|> EXTEND EXTRACT(HOUR FROM visitStartTime AT TIME ZONE 'America/Los_Angeles') AS local_hour
+>|> AGGREGATE
+>    COUNT(*) AS sessions,
+>    SUM(pageviews) AS pageviews,
+>  GROUP BY
+>    local_hour
+>|> ORDER BY local_hour
+>```
+
+### Discussion
+Each step uses the result of the step before it: `EXTEND` reads the timestamp that `SET` just created.
+In standard SQL, each step would need its own CTE with `SELECT * REPLACE (...)`, or the expressions would have to be nested inside each other.
+
+Pipe syntax also makes debugging easier.
+To see the data at any step, comment out every line below it and run the query.
+For example, comment out the last two lines to check `local_hour` before aggregating.
+
+# Next lesson
+The next lesson will cover multiple levels of aggregation and transforming arrays of structs. These are cases where pipe syntax really helps code readability.

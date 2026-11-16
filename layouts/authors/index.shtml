@@ -1,0 +1,11 @@
+<extend template="base.shtml">
+<head id="head"></head>
+
+<title id="title">FSDD - <ctx :text="$page.title"></ctx></title>
+
+<body id="body">
+  <h1 :text="$page.title"></h1>
+  <ul :loop="$page.subpagesAlphabetic()">
+    <li><a href="$loop.it.link()" :text="$loop.it.title"></a></li>
+  </ul>
+</body>

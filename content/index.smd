@@ -1,10 +1,12 @@
 ---
 .title = "Welcome",
-.date = @date("2025-05-23T00:00:00"),
-.author = "FullStackDev",
+.date = .date("2025-05-23T00:00:00"),
 .layout = "index.shtml",
 --- 
 
 
 # Welcome
-Welcome to the Full Stack Data Dev, where we share musings and learnings from work and from hobby projects.
+Welcome to the Full Stack Data Dev, the home page of two data scientists documenting parts of their work and hobbies.
+
+## Path of Exile
+- [Atlas planner]($link.siteAsset("poe/atlas/index.html")) for 3.30 Covens of Umbra.

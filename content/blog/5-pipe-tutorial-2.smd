@@ -1,10 +1,264 @@
 ---
-.title = "Pipe Syntax Tutorial: Lesson 2 (WIP)",
-.date = @date("2025-12-29T00:00:00"),
-.author = "Michael",
+.title = "Pipe Syntax Tutorial: Lesson 2",
+.date = .date("2025-12-29T00:00:00"),
+.authors = ["michael"],
 .layout = "blog/post.shtml",
 .tags = ["BigQuery", "SQL"],
-.custom = { }
---- 
+.draft = true,
+---
 
-# Work In Progress
+# Introduction
+This lesson continues from [Lesson 1]($link.page("blog/4-pipe-tutorial-1")), which covers setting up a BigQuery sandbox and the basic pipe operators: `AGGREGATE`, `EXTEND`, `ORDER BY`, `WHERE`, `SELECT`, `SET`, `DROP` and `LIMIT`.
+As in Lesson 1, each exercise starts by introducing any syntax it needs for the first time.
+The exercises here are harder.
+They cover aggregating more than once and transforming arrays of structs, which are the cases where I find pipe syntax saves the most code compared with standard SQL.
+
+As in Lesson 1, every exercise queries `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`, where each row is one session.
+
+# Lessons
+Quick links for readers to access other lessons.
+1. [Introduction]($link.page("blog/4-pipe-tutorial-1"))
+2. Aggregation and arrays (this article)
+
+# Exercises
+## Exercise 4: Top countries in each continent
+### New syntax
+This exercise doesn't need any new pipe operators.
+Instead, it uses `AGGREGATE` twice in a row.
+The second `AGGREGATE` works on the output of the first one, the same way it would work on any other table.
+
+It also uses `ARRAY_AGG`, which comes from standard SQL.
+`ARRAY_AGG` collects the values of a group into an array.
+You can sort the array with `ORDER BY` and keep only the first few elements with `LIMIT`, both inside the parentheses.
+To collect several columns at once, wrap them in `STRUCT()`, which gives you an array of structs.
+For example, `ARRAY_AGG(STRUCT(visitId, visitNumber) ORDER BY visitNumber DESC LIMIT 2)` collects the two sessions with the highest `visitNumber` in each group.
+
+### Task
+For each continent (`geoNetwork.continent`), find:
+- the number of sessions,
+- the 3 countries (`geoNetwork.country`) with the most sessions in that continent, as an array of structs. Each struct holds the country and its number of sessions, and the array is sorted from most to fewest sessions.
+
+Sort the result by the number of sessions, from most to least.
+
+### Expected result
+| continent | sessions | top_countries |
+|---|---|---|
+| Americas | 1472 | United States (1287), Canada (85), Brazil (27) |
+| Europe | 553 | United Kingdom (142), Germany (91), Russia (41) |
+| Asia | 435 | India (155), Japan (41), Thailand (28) |
+| Oceania | 53 | Australia (44), New Zealand (9) |
+| Africa | 38 | Egypt (10), Algeria (8), Nigeria (6) |
+| (not set) | 5 | (not set) (5) |
+
+&nbsp;
+>#### [Sample solution]($block.collapsible(false))
+>```sql
+>FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+>|> AGGREGATE
+>    COUNT(*) AS sessions,
+>  GROUP BY
+>    geoNetwork.continent AS continent,
+>    geoNetwork.country AS country,
+>|> AGGREGATE
+>    SUM(sessions) AS sessions,
+>    ARRAY_AGG(STRUCT(country, sessions) ORDER BY sessions DESC LIMIT 3) AS top_countries,
+>  GROUP BY
+>    continent
+>|> ORDER BY sessions DESC
+>```
+
+### Discussion
+The query aggregates twice: first to one row per country, then to one row per continent.
+In standard SQL, the first aggregation would need its own CTE, and the reader would have to check the `GROUP BY` at the bottom of each CTE to know what one row means.
+In pipe syntax, the second level is just another `|> AGGREGATE`, and the `GROUP BY` under each one tells you what one row means at that point.
+
+## Exercise 5: Top landing pages
+### New syntax
+A subquery can also be written in pipe syntax.
+Inside a subquery, `FROM UNNEST(<array>)` turns an array into a table with one row per element.
+When the elements are structs, each field of the struct becomes a column.
+
+`|> SELECT AS STRUCT` works like `|> SELECT`, but packs the selected columns of each row into a single struct.
+You need it inside `ARRAY(...)`, which turns a subquery into an array and expects the subquery to return one column.
+Without `AS STRUCT`, a subquery that selects two columns can't be turned into an array.
+
+Arrays are indexed with `[SAFE_OFFSET(n)]`, where `n` starts at 0.
+It returns `NULL` when the array has fewer than `n + 1` elements, instead of returning an error like `[OFFSET(n)]` does.
+
+The following example keeps two fields of each hit, and turns them back into an array for each session.
+```sql
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+|> SELECT
+    visitId,
+    ARRAY(
+        FROM UNNEST(hits)
+        |> SELECT AS STRUCT
+            hitNumber,
+            type,
+    ) AS hit_types,
+|> LIMIT 2
+```
+
+### Task
+Each session has an array of hits (`hits`), and each hit is either a page view (`type = 'PAGE'`) or an event (`type = 'EVENT'`).
+The landing page of a session is the page of its first PAGE hit.
+
+Keep one row per session, and replace `hits` with an array that only contains PAGE hits.
+Each element should only hold `hitNumber` and the page path (`page.pagePath`).
+Then find the 5 most common landing pages, with the number of sessions and converting sessions for each.
+
+### Expected result
+| landing_page | sessions | converting_sessions |
+|---|---|---|
+| /home | 1273 | 25 |
+| /google+redesign/shop+by+brand/youtube | 587 | 0 |
+| /google+redesign/apparel/mens/mens+t+shirts | 117 | 0 |
+| /signin.html | 78 | 1 |
+| /basket.html | 37 | 8 |
+
+Before the final aggregation, your query should still have 2556 rows, one for each session.
+
+>#### [Sample solution]($block.collapsible(false))
+>```sql
+>FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+>|> SET
+>    hits = ARRAY(
+>        FROM UNNEST(hits)
+>        |> WHERE type = 'PAGE'
+>        |> SELECT AS STRUCT
+>            hitNumber,
+>            page.pagePath AS page_path,
+>    )
+>|> EXTEND hits[SAFE_OFFSET(0)].page_path AS landing_page
+>|> AGGREGATE
+>    COUNT(*) AS sessions,
+>    COUNTIF(totals.transactions > 0) AS converting_sessions,
+>  GROUP BY
+>    landing_page
+>|> ORDER BY sessions DESC
+>|> LIMIT 5
+>```
+
+### Discussion
+This is the same pattern as the BMI example in my [earlier article]($link.page("blog/1-BQPipe")).
+The array is transformed in place by a subquery inside `|> SET`, so the table keeps one row per session.
+You can check this by replacing everything from `|> AGGREGATE` onwards with `|> AGGREGATE COUNT(*)`, which returns 2556.
+
+## Exercise 6: Where did my sessions go?
+### New syntax
+This exercise doesn't need any new pipe syntax.
+The second half is written in standard SQL, and uses a comma between a table and `UNNEST`:
+```sql
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`, UNNEST(hits) AS h
+```
+The comma is a cross join between each session and its own hits, which produces one row per hit.
+Each row keeps the session's columns, and the hit's fields are available through `h`, for example `h.type`.
+
+### Task
+Repeat the transformation from Exercise 5, but keep EVENT hits instead of PAGE hits.
+Each element should hold `hitNumber`, the event category (`eventInfo.eventCategory`) and the event action (`eventInfo.eventAction`).
+Instead of finding landing pages, count the rows in the result and the number of sessions with no events.
+
+Then write the same transformation in standard SQL, without an `ARRAY()` subquery:
+1. Unnest `hits` and keep only EVENT hits.
+2. Aggregate the hits back into an array, grouped by session. The columns `fullVisitorId` and `visitId` together identify a session.
+
+Compare the row counts of the two queries.
+
+### Expected result
+The pipe syntax query returns 2556 sessions, and 2074 of them have no events.
+The standard SQL query returns only 482 sessions.
+
+>#### [Sample solution (pipe syntax)]($block.collapsible(false))
+>```sql
+>FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+>|> SET
+>    hits = ARRAY(
+>        FROM UNNEST(hits)
+>        |> WHERE type = 'EVENT'
+>        |> SELECT AS STRUCT
+>            hitNumber,
+>            eventInfo.eventCategory AS category,
+>            eventInfo.eventAction AS action,
+>    )
+>|> AGGREGATE
+>    COUNT(*) AS sessions,
+>    COUNTIF(ARRAY_LENGTH(hits) = 0) AS sessions_without_events,
+>```
+
+>#### [Sample solution (standard SQL)]($block.collapsible(false))
+>```sql
+>WITH
+>unnested AS (
+>  SELECT
+>    fullVisitorId,
+>    visitId,
+>    h.hitNumber,
+>    h.eventInfo.eventCategory AS category,
+>    h.eventInfo.eventAction AS action,
+>  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`, UNNEST(hits) AS h
+>  WHERE h.type = 'EVENT'
+>),
+>
+>reaggregated AS (
+>  SELECT
+>    fullVisitorId,
+>    visitId,
+>    ARRAY_AGG(STRUCT(hitNumber, category, action) ORDER BY hitNumber) AS hits,
+>  FROM unnested
+>  GROUP BY fullVisitorId, visitId
+>)
+>
+>SELECT COUNT(*) AS sessions
+>FROM reaggregated
+>```
+
+### Discussion
+The standard SQL query loses 2074 sessions without any error.
+The comma before `UNNEST(hits)` is a cross join, and a cross join with an empty array produces no rows.
+Once the `WHERE` removes every hit of a session that had no events, nothing is left to aggregate back into a row for that session.
+
+Exercise 5 didn't show this problem because every session on this day has at least one PAGE hit.
+That is what makes this kind of bug dangerous: the query is correct on today's data and silently wrong when the data changes.
+
+To fix the standard SQL query, every session has to survive the unnest, and the empty hits have to be removed again when aggregating.
+>#### [Fixed standard SQL]($block.collapsible(false))
+>```sql
+>WITH
+>unnested AS (
+>  SELECT
+>    fullVisitorId,
+>    visitId,
+>    h.hitNumber,
+>    h.eventInfo.eventCategory AS category,
+>    h.eventInfo.eventAction AS action,
+>  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`
+>  LEFT JOIN UNNEST(hits) AS h ON h.type = 'EVENT' -- filter in ON, not WHERE
+>),
+>
+>reaggregated AS (
+>  SELECT
+>    fullVisitorId,
+>    visitId,
+>    IFNULL(
+>      ARRAY_AGG(
+>        IF(hitNumber IS NULL, NULL, STRUCT(hitNumber, category, action))
+>        IGNORE NULLS
+>        ORDER BY hitNumber
+>      ),
+>      []
+>    ) AS hits,
+>  FROM unnested
+>  GROUP BY fullVisitorId, visitId
+>)
+>
+>SELECT
+>  COUNT(*) AS sessions,
+>  COUNTIF(ARRAY_LENGTH(hits) = 0) AS sessions_without_events,
+>FROM reaggregated
+>```
+
+This query returns 2556 sessions and 2074 sessions without events, matching the pipe syntax query.
+It needs a `LEFT JOIN` with the filter in the `ON` clause, an `IF` to skip the empty hits, and `IFNULL` because `ARRAY_AGG` returns `NULL` instead of an empty array.
+It also only keeps the columns listed in `GROUP BY`, so any other session columns would have to be listed there as well.
+The pipe syntax query needs none of this, because it never changes the number of rows in the table.

@@ -1,9 +1,8 @@
 ---
 .title = "Blog",
-.date = @date("2025-05-23T00:00:00"),
-.author = "FullStackDev",
+.date = .date("2025-05-23T00:00:00"),
 .layout = "blog/index.shtml",
-.alternatives = [{ 
+.alternatives = [.{ 
     .name = "rss",
     .layout = "blog/index.xml", 
     .output = "index.xml",

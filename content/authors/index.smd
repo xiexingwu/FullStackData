@@ -1,0 +1,6 @@
+---
+.title = "Authors",
+.date = .date("2026-11-15T00:00:00"),
+.layout = "authors/index.shtml",
+.forbid_subsections = true,
+---

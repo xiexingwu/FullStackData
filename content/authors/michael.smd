@@ -1,0 +1,26 @@
+---
+.title = "Michael",
+.date = .date("2026-11-15T00:00:00"),
+// Author pages list themselves as their author, so the layout can read
+// this page's key with `$page.authors.at(0)`. The key must match the filename.
+.authors = ["michael"],
+// The bio is in a $section so its headings can start at `###` and nest under
+// the author's name on the About page. Zine skips the heading-level check
+// inside sections.
+.layout = "authors/author.shtml",
+// LinkedIn handle only; the layout builds the full profile URL.
+.custom = {
+    "linkedin": "xiexingwu",
+},
+---
+
+[]($section)
+
+I graduated in 2023 with a PhD in computational fluid dynamics.
+Since then, I have been working as a data scientist in an Australian tech company in the travel industry.
+
+I enjoy gaming and following emergent technologies like Zig and WebGPU.
+I also love playing DanceDanceRevolution.
+
+## Projects
+- Resume template in [Typst](https://github.com/xiexingwu/typst-resume-template/blob/main/main.pdf).

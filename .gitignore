@@ -2,3 +2,4 @@ public/
 zig-out/
 zig-pkg/
 .zig-cache/
+assets/poe/

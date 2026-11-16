@@ -29,11 +29,11 @@
   </div>
   <div class="post-date">
     Written by:
-    <span :text="$page.author"></span>
+    <span><ctx :loop="$page.authors"><a href="$site.page('about').link().suffix('#').suffix($loop.it)" :text="$site.page('authors', $loop.it).title"></a><ctx :if="$loop.last.not()">, </ctx></ctx></span>
   </div>
   <div :if="$page.custom.get?('last_edit')" class="post-date">
     Last edited:
-    <span :text="$page.custom.get('last_edit').format('2006 Jan 02')"></span>
+    <span :text="$page.custom.get('last_edit').parseDate().format('2006 Jan 02')"></span>
   </div>
   <div class="post" :html="$page.content()"></div>
   <div id="prev-next">

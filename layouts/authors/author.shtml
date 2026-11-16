@@ -1,0 +1,35 @@
+<extend template="base.shtml">
+<head id="head">
+  <style>
+    .date {
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+
+<title id="title">FSDD - <ctx :text="$page.title"></ctx></title>
+
+<body id="body">
+  <h1 :text="$page.title"></h1>
+  <h2>About</h2>
+  <div :html="$page.content()"></div>
+
+  <h2>Posts</h2>
+  <ctx :if="$site.page('blog').subpagesByAuthor($page.authors.at(0)).empty">
+    <p>No posts yet.</p>
+  </ctx>
+  <ctx :if="$site.page('blog').subpagesByAuthor($page.authors.at(0)).empty.not()">
+    <ul :loop="$site.page('blog').subpagesByAuthor($page.authors.at(0))">
+      <li>
+        <span class="date" :text="$loop.it.date.format('January 02, 2006')"></span>
+        -
+        <a href="$loop.it.link()" :text="$loop.it.title"></a>
+      </li>
+    </ul>
+  </ctx>
+
+  <p :if="$page.custom.get?('linkedin')">
+    Find <ctx :text="$page.title"></ctx> on
+    <a href="$if.prefix('https://www.linkedin.com/in/').suffix('/')">LinkedIn</a>.
+  </p>
+</body>

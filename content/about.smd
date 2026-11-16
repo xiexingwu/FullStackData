@@ -1,38 +1,15 @@
 ---
 .title = "About",
-.date = @date("2025-05-23T00:00:00"),
-.author = "FullStackDev",
-.layout = "index.shtml",
+.date = .date("2025-05-23T00:00:00"),
+.layout = "about.shtml",
 --- 
 
-# About the team
-## Jessie
-I have worked in the Data & AI space as a technologist since 2019.
-Having started my career in a consultancy, I have taken on a wide variety of roles across multiple industries (FMCG, banking, automotive).
-See my [LinkedIn](https://www.linkedin.com/in/jessie-sj-wang/)!
+# [What is a full stack data dev?]($section.id('intro'))
+We jokingly coined the term "full stack data dev" (FSDD) in 2024 since the industry's growing expectation for data scientists is mirroring those of a front end developer to become full stack developers.
 
-I really enjoy mathematical optimisation problems and I wish their reputation in the tech industry is as good as AI.
+Gone are the days of a data scientist only needing deep expertise in ML model development. Increasingly, data scientists are expected to demonstrate epxertise in data engineering, data governenace, data analytics, data modelling, product experimentation, ML ops, AI engineering... The list keeps growing by the year!
 
-### Projects
-Take a peek at some of my hobby projects:
+# [The Team]($section.id('team'))
 
-- [BabySprout](https://github.com/JessieW-FSD/Baby-Sprout), an iOS app to help parents log and monitor their babies' routine.
-
-## Michael
-I graduated in 2023 with a PhD in computational fluid dynamics.
-Since graduating, I have been working in an Australian tech company as a data scientist.
-See my [LinkedIn](https://www.linkedin.com/in/xiexingwu/)!
-
-I enjoy gaming and reading about emergent technologies like Zig and WebGPU.
-I also love playing DanceDanceRevolution.
-
-### My dev environment
-- System: MacOS
-- Terminal: Ghostty + Zsh
-- Editor: NeoVim
-
-### Projects
+# [Miscellaneous]($section.id('misc'))
 This website is built using [zine](https://zine-ssg.io/).
-Take a peek at some of my hobby projects:
-
-- Resume template in [Typst](https://github.com/xiexingwu/typst-resume-template/blob/main/main.pdf).
