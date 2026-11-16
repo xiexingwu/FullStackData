@@ -1,67 +1,59 @@
-:root {
-  --light-yellow: #e5c07b;
-  --dark-yellow: #d19a66;
-  --blue: #61afef;
-  --cyan: #56b6c2;
-  --light-red: #e06c75;
-  --dark-red: #be5046;
-  --comment-gray: #5c6370;
-  --magenta: #c678dd;
-}
+/*
+  Syntax colors follow the Catppuccin style guide. The palette variables
+  (--ctp-*) are defined in style.css, which must load before this file.
+*/
 
 pre {
-  border-top: 1px solid white;
-  border-bottom: 1px solid white;
+  background: var(--ctp-mantle);
+  border-top: 1px solid var(--ctp-surface1);
+  border-bottom: 1px solid var(--ctp-surface1);
   padding: 10px 5px;
 }
 
 pre:has(>code){
-  border: 1px solid;
+  border: 1px solid var(--ctp-surface1);
+  border-radius: 6px;
+  padding: 10px;
   text-align: left;
+  overflow-x: auto;
 }
 
-p code, li code {
-  background: var(--comment-gray)
+pre code {
+  color: var(--ctp-text);
 }
 
-code.ziggy {
-  color: var(--cyan);
+/* Inline code: any <code> that is not inside a code block. */
+:not(pre) > code {
+  background: var(--ctp-surface0);
+  color: var(--ctp-peach);
+  border: 1px solid var(--ctp-surface1);
+  padding: 0 4px;
+  border-radius: 4px;
 }
 
-code.ziggy .keyword,
-code.ziggy .type {
-  color: var(--light-yellow);
-}
-
-code.ziggy .string {
-  color: var(--dark-yellow);
-}
-
-code.ziggy .numeric.constant {
-  color: var(--magenta);
-}
-
-code.ziggy .function {
-  color: var(--blue);
-}
-
-/* Code Fallback */
+/*
+  Class names come from Zine's tree-sitter highlighter. One token can carry
+  several classes (for example "string float number"), so rules later in this
+  file win when two of them match.
+*/
+code .variable          { color: var(--ctp-text); }
+code .string            { color: var(--ctp-green); }
+code .field,
+code .property          { color: var(--ctp-lavender); }
+code .number,
+code .float,
+code .constant,
+code .boolean           { color: var(--ctp-peach); }
 code .keyword,
-code .type {
-  color: var(--light-yellow);
-}
+code .keyword_operator  { color: var(--ctp-mauve); }
+code .operator          { color: var(--ctp-sky); }
+code .punctuation_bracket,
+code .punctuation_delimiter { color: var(--ctp-overlay2); }
+code .type,
+code .type_builtin      { color: var(--ctp-yellow); }
+code .function,
+code .function_call     { color: var(--ctp-blue); }
+code .comment           { color: var(--ctp-overlay2); font-style: italic; }
 
-code .string {
-  color: var(--dark-yellow);
-}
-
-code .numeric.constant {
-  color: var(--magenta);
-}
-
-code .function {
-  color: var(--blue);
-}
-code .comment {
-  color: var(--comment-gray);
-}
+/* Ziggy (Zine config) snippets */
+code.ziggy              { color: var(--ctp-teal); }

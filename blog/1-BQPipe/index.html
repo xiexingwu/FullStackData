@@ -46,7 +46,7 @@
   </div>
   <div class="post-date">
     Written by:
-    <span>Michael</span>
+    <span><a href="/about/#michael">Michael</a></span>
   </div>
   <div class="post-date">
     Last edited:
@@ -83,7 +83,7 @@ bmi <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
         <span class="field">FROM</span> <span class="variable">UNNEST</span><span class="punctuation_bracket">(</span>history<span class="punctuation_bracket">)</span>
       <span class="punctuation_bracket">)</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">history</span>                  <span class="comment spell">-- This is the end of the subquery</span>
     <span class="punctuation_bracket">)</span>
-  FROM existing_logic
+  <span class="keyword">FROM</span> <span class="type">existing_logic</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 more_logic <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
   <span class="comment spell">-- Further transformations in model</span>
@@ -96,7 +96,7 @@ bmi_unnest <span class="keyword">AS</span> <span class="punctuation_bracket">(</
   <span class="keyword">SELECT</span>
     <span class="type">existing_logic</span><span class="punctuation_delimiter">.</span><span class="operator">*</span> <span class="variable">REPLACE</span><span class="punctuation_bracket">(</span>h <span class="keyword">AS</span> history<span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
     OFFSET
-  <span class="keyword">FROM</span> existing_logic<span class="punctuation_delimiter">,</span> UNNEST<span class="punctuation_bracket">(</span>history<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> h <span class="keyword">WITH</span> <span class="keyword">OFFSET</span>
+  <span class="keyword">FROM</span> <span class="type">existing_logic</span><span class="punctuation_delimiter">,</span> <span class="function_call type">UNNEST</span><span class="punctuation_bracket">(</span><span class="field">history</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">h</span> <span class="keyword">WITH</span> OFFSET
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 bmi_compute <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
   <span class="keyword">SELECT</span>
@@ -104,7 +104,7 @@ bmi_compute <span class="keyword">AS</span> <span class="punctuation_bracket">(<
       <span class="punctuation_bracket">(</span><span class="keyword">SELECT</span> <span class="field">AS</span> <span class="variable">STRUCT</span>
         <span class="type">history</span><span class="punctuation_delimiter">.</span><span class="operator">*</span><span class="punctuation_delimiter">,</span>
         <span class="type">history</span><span class="punctuation_delimiter">.</span><span class="field">weight</span> <span class="operator">/</span> <span class="function_call type">POWER</span><span class="punctuation_bracket">(</span><span class="type">history</span><span class="punctuation_delimiter">.</span><span class="field">height</span><span class="punctuation_delimiter">,</span> <span class="string float number">2</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">BMI</span>
-      <span class="punctuation_bracket">)</span> AS history
+      <span class="punctuation_bracket">)</span> AS <span class="field">history</span>
     <span class="punctuation_bracket">)</span>
   <span class="keyword">FROM</span> <span class="type">bmi_unnest</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
@@ -123,12 +123,12 @@ more_logic <span class="keyword">AS</span> <span class="punctuation_bracket">(</
   <span class="comment spell">-- Existing transformations in model</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 bmi <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
-  FROM existing_logic
-  |<span class="operator">&gt;</span> <span class="keyword">SET</span>
-      <span class="type">history</span> <span class="operator">=</span> ARRAY<span class="punctuation_bracket">(</span><span class="punctuation_bracket">(</span>
-          FROM UNNEST<span class="punctuation_bracket">(</span>history<span class="punctuation_bracket">)</span>
-          |<span class="operator">&gt;</span> EXTEND weight<span class="operator">/</span>POWER<span class="punctuation_bracket">(</span>height<span class="punctuation_delimiter">,</span> 2<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> BMI
-          |<span class="operator">&gt;</span> <span class="keyword">SELECT</span> <span class="field">AS</span> <span class="variable">STRUCT</span> <span class="operator">*</span>
+  <span class="keyword">FROM</span> <span class="type">existing_logic</span>
+  <span class="operator">|&gt;</span> <span class="keyword">SET</span>
+      <span class="field">history</span> <span class="operator">=</span> <span class="function_call">ARRAY</span><span class="punctuation_bracket">(</span><span class="punctuation_bracket">(</span>
+          <span class="keyword">FROM</span> <span class="function_call type">UNNEST</span><span class="punctuation_bracket">(</span><span class="field">history</span><span class="punctuation_bracket">)</span>
+          <span class="operator">|&gt;</span> <span class="keyword">EXTEND</span> <span class="field">weight</span><span class="operator">/</span><span class="function_call type">POWER</span><span class="punctuation_bracket">(</span><span class="field">height</span><span class="punctuation_delimiter">,</span> <span class="string float number">2</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">BMI</span>
+          <span class="operator">|&gt;</span> <span class="keyword">SELECT</span> <span class="field">AS</span> <span class="variable">STRUCT</span> <span class="operator">*</span>
       <span class="punctuation_bracket">)</span><span class="punctuation_bracket">)</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 more_logic <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
@@ -156,31 +156,31 @@ cte3 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
 
 <span class="keyword">SELECT</span>
   <span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span>
-<span class="keyword">FROM</span> <span class="field">cte3</span>
-<span class="variable">JOIN</span> <span class="field">cte2</span> <span class="variable">USING</span><span class="punctuation_bracket">(</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_bracket">)</span>
+<span class="keyword">FROM</span> <span class="type">cte3</span>
+<span class="keyword">JOIN</span> <span class="type">cte2</span> <span class="keyword">USING</span><span class="punctuation_bracket">(</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_bracket">)</span>
 </code></pre>
 <h4>Pipe Syntax</h4><pre><code class="sql"><span class="keyword">WITH</span>
 cte1 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
-  FROM dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
-  |<span class="operator">&gt;</span> <span class="keyword">SELECT</span>
+  <span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="type">table</span>
+  <span class="operator">|&gt;</span> <span class="keyword">SELECT</span>
       <span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 
-<span class="field">cte2</span> <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
+cte2 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
   <span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="type">table2</span>
-  <span class="operator">|</span><span class="operator">&gt;</span> <span class="keyword">SELECT</span>
+  <span class="operator">|&gt;</span> <span class="keyword">SELECT</span>
       <span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 
 cte3 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
-  FROM cte1 <span class="comment spell">-- this appears immediatley below `cte3 AS (`</span>
-  |<span class="operator">&gt;</span> <span class="keyword">SELECT</span>
+  <span class="keyword">FROM</span> <span class="type">cte1</span> <span class="comment spell">-- this appears immediatley below `cte3 AS (`</span>
+  <span class="operator">|&gt;</span> <span class="keyword">SELECT</span>
       <span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span>
 <span class="punctuation_bracket">)</span>
 
-<span class="keyword">FROM</span> <span class="field">cte3</span>
-<span class="operator">|</span><span class="operator">&gt;</span> <span class="field">JOIN</span> <span class="variable">cte2</span> <span class="keyword">USING</span><span class="punctuation_bracket">(</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_bracket">)</span>
-<span class="operator">|</span><span class="operator">&gt;</span> SELECT
+<span class="keyword">FROM</span> <span class="type">cte3</span>
+<span class="operator">|&gt;</span> <span class="keyword">JOIN</span> <span class="type">cte2</span> <span class="keyword">USING</span><span class="punctuation_bracket">(</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_bracket">)</span>
+<span class="operator">|&gt;</span> <span class="keyword">SELECT</span>
     <span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span><span class="punctuation_delimiter">.</span>
 </code></pre>
 <h3>Easier to identify changes in table cardinality (row-count)</h3><p>Consider the following example where the table undergoes several transformations, each of which affect the final row count. In Standard SQL, the cardinality of the table changes 4 times due to the clauses <code>UNNEST</code>, <code>WHERE</code>, <code>GROUP BY</code>, and <code>HAVING</code>.</p><h4>Standard SQL</h4><pre><code class="sql"><span class="keyword">SELECT</span>
@@ -193,15 +193,15 @@ cte3 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
 <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span> dim_1<span class="punctuation_delimiter">,</span> <span class="field">dim_2</span>
 <span class="variable">HAVING</span> metric_1 <span class="operator">&gt;</span> 0
 </code></pre>
-<h4>Pipe Syntax</h4><pre><code class="sql">FROM dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span><span class="punctuation_delimiter">,</span> UNNEST<span class="punctuation_bracket">(</span>arr<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> a
-|<span class="operator">&gt;</span> <span class="keyword">WHERE</span> some_filter
-|<span class="operator">&gt;</span> AGGREGATE
-    COUNTIF<span class="punctuation_bracket">(</span>some_criteria<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric_1<span class="punctuation_delimiter">,</span>
-    ARRAY_AGG<span class="punctuation_bracket">(</span>some_expression<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric_2<span class="punctuation_delimiter">,</span>
-  <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span>
+<h4>Pipe Syntax</h4><pre><code class="sql"><span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="type">table</span><span class="punctuation_delimiter">,</span> <span class="function_call type">UNNEST</span><span class="punctuation_bracket">(</span><span class="field">arr</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">a</span>
+<span class="operator">|&gt;</span> <span class="keyword">WHERE</span> <span class="field">some_filter</span>
+<span class="operator">|&gt;</span> <span class="keyword">AGGREGATE</span>
+    <span class="function_call type">COUNTIF</span><span class="punctuation_bracket">(</span><span class="field">some_criteria</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric_1</span><span class="punctuation_delimiter">,</span>
+    <span class="function_call type">ARRAY_AGG</span><span class="punctuation_bracket">(</span><span class="field">some_expression</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric_2</span><span class="punctuation_delimiter">,</span>
+  <span class="field">GROUP</span> <span class="variable">BY</span>
     dim_1<span class="punctuation_delimiter">,</span>
-    dim_2<span class="punctuation_delimiter">,</span>
-|<span class="operator">&gt;</span> <span class="keyword">WHERE</span> metric_1 <span class="operator">&gt;</span> 0
+    <span class="field">dim_2</span><span class="punctuation_delimiter">,</span>
+<span class="operator">|&gt;</span> <span class="keyword">WHERE</span> <span class="field">metric_1</span> <span class="operator">&gt;</span> <span class="string float number">0</span>
 </code></pre>
 <p>Some pain points in Standard SQL and how Pipe syntax helps:</p><ul><li><p>If the <code>SELECT</code> list is very long, the dev has to scroll down quite far from the beginning of the CTE to find out how the cardinality has changed. In Pipe syntax, the dev immediately expects a change in cardinality upon coming across one of <code>UNNEST</code>, <code>|&gt; WHERE</code> and <code>|&gt; AGGREGATE</code>. Note, one may opt for the style of using <code>|&gt; CROSS JOIN UNNEST</code> to denote an explicit change in cardinality.</p></li><li><p>Additional mental headspace is needed to determine the order in which the table cardinality changes due to each of the 4 clauses. This is exacerbated further if the query has additional clauses like <code>QUALIFY</code> and <code>PIVOT</code>. In Pipe syntax, the order in which cardinality changes is explicit with each chained <code>|&gt; WHERE</code> or <code>|&gt; AGGREGATE</code>. The changes in cardinality are thus sequential and can be more easily reasoned about.</p></li></ul><h3>Easier multi-level aggregation</h3><p>In Standard SQL, each level of aggregation needs a new CTE (or god forbid a nested subquery). In Pipe syntax, each additional level of aggregation is just another chain of <code>|&gt; AGGREGATE … GROUP BY …</code> clause.</p><p>The appearance of <code>AGGREGATE</code> also gives immediate notice to the reader that the following logic is focused on aggregation. In Standard SQL, one would have to:</p><ol><li>Read through a large list of dimensions until an aggregation function appears without an <code>OVER</code> clause, or</li><li>Scroll to the end of the CTE and check for a <code>GROUP BY</code> clause.</li></ol><h4>Standard SQL</h4><pre><code class="sql"><span class="keyword">WITH</span>
 date_OnD <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
@@ -231,24 +231,24 @@ date_OnD <span class="keyword">AS</span> <span class="punctuation_bracket">(</sp
 <span class="keyword">FROM</span> <span class="type">date_OnD</span>
 <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span> <span class="field">Date</span>
 </code></pre>
-<h4>Pipe Syntax</h4><pre><code class="sql">FROM dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
-|<span class="operator">&gt;</span> AGGREGATE
-    COUNT<span class="punctuation_bracket">(</span>1<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric1<span class="punctuation_delimiter">,</span>
-    SUM<span class="punctuation_bracket">(</span>value<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric2<span class="punctuation_delimiter">,</span>
-  <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span>
-    <span class="type_builtin">Date</span><span class="punctuation_delimiter">,</span> OCanonical<span class="punctuation_delimiter">,</span> DCanonical
-|<span class="operator">&gt;</span> AGGREGATE
-    SUM<span class="punctuation_bracket">(</span>metric1<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric1<span class="punctuation_delimiter">,</span>
-    SUM<span class="punctuation_bracket">(</span>metric2<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric2<span class="punctuation_delimiter">,</span>
+<h4>Pipe Syntax</h4><pre><code class="sql"><span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="type">table</span>
+<span class="operator">|&gt;</span> <span class="keyword">AGGREGATE</span>
+    <span class="function_call type">COUNT</span><span class="punctuation_bracket">(</span><span class="string float number">1</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric1</span><span class="punctuation_delimiter">,</span>
+    <span class="function_call type">SUM</span><span class="punctuation_bracket">(</span><span class="field">value</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric2</span><span class="punctuation_delimiter">,</span>
+  <span class="field">GROUP</span> <span class="variable">BY</span>
+    Date<span class="punctuation_delimiter">,</span> <span class="field">OCanonical</span><span class="punctuation_delimiter">,</span> <span class="field">DCanonical</span>
+<span class="operator">|&gt;</span> <span class="keyword">AGGREGATE</span>
+    <span class="function_call type">SUM</span><span class="punctuation_bracket">(</span><span class="field">metric1</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric1</span><span class="punctuation_delimiter">,</span>
+    <span class="function_call type">SUM</span><span class="punctuation_bracket">(</span><span class="field">metric2</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric2</span><span class="punctuation_delimiter">,</span>
     
-    ARRAY_AGG<span class="punctuation_bracket">(</span>STRUCT<span class="punctuation_bracket">(</span>
-      OCanonical<span class="punctuation_delimiter">,</span>
-      DCanonical<span class="punctuation_delimiter">,</span>
-      metric1<span class="punctuation_delimiter">,</span>
-      metric2
-    <span class="punctuation_bracket">)</span> <span class="keyword">LIMIT</span> 10<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> Examples
+    <span class="function_call type">ARRAY_AGG</span><span class="punctuation_bracket">(</span><span class="function_call type">STRUCT</span><span class="punctuation_bracket">(</span>
+      <span class="field">OCanonical</span><span class="punctuation_delimiter">,</span>
+      <span class="field">DCanonical</span><span class="punctuation_delimiter">,</span>
+      <span class="field">metric1</span><span class="punctuation_delimiter">,</span>
+      <span class="field">metric2</span>
+    <span class="punctuation_bracket">)</span> <span class="keyword">LIMIT</span> <span class="string float number">10</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">Examples</span>
   <span class="keyword">GROUP</span> <span class="keyword_operator">BY</span>
-    <span class="type_builtin">Date</span>
+    <span class="field">Date</span>
 </code></pre>
 <h3>Easier EXCEPT and REPLACE</h3><p>The equivalent of <code>SELECT * EXCEPT ()</code> and <code>SELECT * REPLACE ()</code> are now <code>|&gt; DROP</code> and <code>|&gt; SET</code>, respectively. Some niceties:</p><ul><li>Trailing commas makes it easy to toggle comments on these lines when developing code,</li><li>The syntax for <code>SET</code> makes it very obvious which column is being replaced. This is in contrast to the <code>REPLACE</code> syntax, which requires the dev to tediouscly scan for the corresponding <code>AS</code> keyword for each column.</li></ul><h3>Standard SQL</h3><pre><code class="sql"><span class="keyword">SELECT</span>
   <span class="operator">*</span> <span class="keyword_operator">EXCEPT</span> <span class="punctuation_bracket">(</span>
@@ -261,17 +261,17 @@ date_OnD <span class="keyword">AS</span> <span class="punctuation_bracket">(</sp
       col_2<span class="punctuation_delimiter">.</span>Uid <span class="keyword">AS</span> Aqid
     <span class="punctuation_bracket">)</span> <span class="keyword">AS</span> col_2
   <span class="punctuation_bracket">)</span>
-<span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
+<span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="type">table</span>
 </code></pre>
-<h4>Pipe Syntax</h4><pre><code class="sql">FROM dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
-|<span class="operator">&gt;</span> <span class="keyword">DROP</span>
-    drop_1<span class="punctuation_delimiter">,</span>
-    drop_2<span class="punctuation_delimiter">,</span>
-|<span class="operator">&gt;</span> <span class="keyword">SET</span>
-    <span class="type">col_1</span> <span class="operator">=</span> UDF1<span class="punctuation_bracket">(</span>col_1<span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
-    col_2 <span class="operator">=</span> STRUCT<span class="punctuation_bracket">(</span>
-        DATE<span class="punctuation_bracket">(</span>col_2<span class="punctuation_delimiter">.</span><span class="type_builtin">Timestamp</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="type_builtin">Date</span><span class="punctuation_delimiter">,</span>
-        col_2<span class="punctuation_delimiter">.</span>Uid <span class="keyword">AS</span> Aqid
+<h4>Pipe Syntax</h4><pre><code class="sql"><span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="type">table</span>
+<span class="operator">|&gt;</span> <span class="keyword">DROP</span>
+    <span class="field">drop_1</span><span class="punctuation_delimiter">,</span>
+    <span class="field">drop_2</span><span class="punctuation_delimiter">,</span>
+<span class="operator">|&gt;</span> <span class="keyword">SET</span>
+    <span class="field">col_1</span> <span class="operator">=</span> <span class="function_call type">UDF1</span><span class="punctuation_bracket">(</span><span class="field">col_1</span><span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
+    <span class="field">col_2</span> <span class="operator">=</span> <span class="function_call type">STRUCT</span><span class="punctuation_bracket">(</span>
+        <span class="function_call type">DATE</span><span class="punctuation_bracket">(</span><span class="type">col_2</span><span class="punctuation_delimiter">.</span><span class="field">Timestamp</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">Date</span><span class="punctuation_delimiter">,</span>
+        <span class="type">col_2</span><span class="punctuation_delimiter">.</span><span class="field">Uid</span> <span class="keyword">AS</span> <span class="variable">Aqid</span>
       <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 </code></pre>
 <h3>Easier to manage sequential changes in column definitions</h3><p>Following on the discussion of <code>REPLACE</code> and <code>SET</code> above, there’s a common pattern where data needs to be processed one column at a time. The brevity of the code speaks for itself.</p><h4>Standard SQL</h4><pre><code class="sql"><span class="keyword">WITH</span>
@@ -288,7 +288,7 @@ new_col1 <span class="keyword">AS</span> <span class="punctuation_bracket">(</sp
     <span class="operator">*</span> <span class="variable">REPLACE</span> <span class="punctuation_bracket">(</span>
       <span class="function_call type">UDF1</span><span class="punctuation_bracket">(</span><span class="field">col_1</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">col_1</span>
     <span class="punctuation_bracket">)</span>
-  FROM raw
+  <span class="keyword">FROM</span> <span class="type">raw</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 
 new_col2 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
@@ -296,7 +296,7 @@ new_col2 <span class="keyword">AS</span> <span class="punctuation_bracket">(</sp
     <span class="operator">*</span> <span class="variable">REPLACE</span> <span class="punctuation_bracket">(</span>
       <span class="function_call type">UDF2</span><span class="punctuation_bracket">(</span><span class="field">col_1</span><span class="punctuation_delimiter">,</span> <span class="field">col_2</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">col_2</span> <span class="comment spell">-- depends on new col_1</span>
     <span class="punctuation_bracket">)</span>
-  FROM new_col2
+  <span class="keyword">FROM</span> <span class="type">new_col2</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 
 new_col3 <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
@@ -304,18 +304,18 @@ new_col3 <span class="keyword">AS</span> <span class="punctuation_bracket">(</sp
     <span class="operator">*</span> <span class="variable">REPLACE</span> <span class="punctuation_bracket">(</span>
       <span class="function_call type">UDF3</span><span class="punctuation_bracket">(</span><span class="field">col_2</span><span class="punctuation_delimiter">,</span> <span class="field">col_3</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">col_3</span> <span class="comment spell">-- depends on new col_2</span>
     <span class="punctuation_bracket">)</span>
-  FROM new_col2
+  <span class="keyword">FROM</span> <span class="type">new_col2</span>
 <span class="punctuation_bracket">)</span>
 
 <span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="type">new_col3</span>
 </code></pre>
-<h4>Pipe Syntax</h4><pre><code class="sql">FROM dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
-|<span class="operator">&gt;</span> <span class="keyword">SET</span>
-    <span class="type">col_1</span> <span class="operator">=</span> UDF1<span class="punctuation_bracket">(</span>col_1<span class="punctuation_bracket">)</span>
-|<span class="operator">&gt;</span> <span class="keyword">SET</span>
-    <span class="type">col_2</span> <span class="operator">=</span> UDF2<span class="punctuation_bracket">(</span>col_1<span class="punctuation_delimiter">,</span> col_2<span class="punctuation_bracket">)</span> <span class="comment spell">-- depends on new col_1</span>
-|<span class="operator">&gt;</span> <span class="keyword">SET</span>
-    <span class="type">col_3</span> <span class="operator">=</span> UDF3<span class="punctuation_bracket">(</span>col_2<span class="punctuation_delimiter">,</span> col_3<span class="punctuation_bracket">)</span> <span class="comment spell">-- depends on new col_2</span>
+<h4>Pipe Syntax</h4><pre><code class="sql"><span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="type">table</span>
+<span class="operator">|&gt;</span> <span class="keyword">SET</span>
+    <span class="field">col_1</span> <span class="operator">=</span> <span class="function_call type">UDF1</span><span class="punctuation_bracket">(</span><span class="field">col_1</span><span class="punctuation_bracket">)</span>
+<span class="operator">|&gt;</span> <span class="keyword">SET</span>
+    <span class="field">col_2</span> <span class="operator">=</span> <span class="function_call type">UDF2</span><span class="punctuation_bracket">(</span><span class="field">col_1</span><span class="punctuation_delimiter">,</span> <span class="field">col_2</span><span class="punctuation_bracket">)</span> <span class="comment spell">-- depends on new col_1</span>
+<span class="operator">|&gt;</span> <span class="keyword">SET</span>
+    <span class="field">col_3</span> <span class="operator">=</span> <span class="function_call type">UDF3</span><span class="punctuation_bracket">(</span><span class="field">col_2</span><span class="punctuation_delimiter">,</span> <span class="field">col_3</span><span class="punctuation_bracket">)</span> <span class="comment spell">-- depends on new col_2</span>
 </code></pre>
 <h3>Cleaner Aggregation</h3><p>In Standard SQL, dimensions and metrics can be in arbitrary order in the <code>SELECT</code> statement and the column names need to be manually duplicated in the <code>GROUP BY</code> statement if not using <code>GROUP BY 1, 2 ...</code> or <code>GROUP BY ALL</code>.</p><p>When developing code, this becomes time consuming when:</p><ul><li>a column name needs to be renamed in both the <code>SELECT</code> and <code>GROUP</code> BY clauses,</li><li>a column needs to be added/removed from <code>GROUP BY</code> when a dimension becomes a metric or vice-versa,</li><li>debugging a column that should have been aggregated but wasn’t due to using <code>GROUP BY ALL</code>.</li></ul><p>In Pipe syntax, the separation of metrics and dimensions is demarcated by the <code>GROUP BY</code> keywords. Renaming of grouping columns becomes trivial.</p><ul><li>Note 1: Pipe syntax allows a trailing comma for the final column in <code>GROUP BY</code> which makes it easy to reorder grouping columns.</li><li>Note 2: Pipe syntax doesn’t allow <code>GROUP BY ALL</code>. This may sound like an inconvenience as more lines of code might be needed, but there’s no actual change since the code is just being moved from <code>SELECT</code> to <code>GROUP BY</code>. There’s also the added benefit of the code being more explicit about what’s being grouped.</li></ul><h4>Standard SQL</h4><pre><code class="sql"><span class="keyword">WITH</span>
 group_by_column_example <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
@@ -342,20 +342,20 @@ group_by_all_example <span class="keyword">AS</span> <span class="punctuation_br
 </code></pre>
 <h4>Pipe Syntax</h4><pre><code class="sql"><span class="keyword">WITH</span>
 group_by_column_example <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
-  FROM datset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
-  |<span class="operator">&gt;</span> AGGREGATE
-      COUNT<span class="punctuation_bracket">(</span>1<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric<span class="punctuation_delimiter">,</span>
-    GROUP BY
+  <span class="keyword">FROM</span> datset<span class="punctuation_delimiter">.</span><span class="type">table</span>
+  <span class="operator">|&gt;</span> <span class="keyword">AGGREGATE</span>
+      <span class="function_call type">COUNT</span><span class="punctuation_bracket">(</span><span class="string float number">1</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric</span><span class="punctuation_delimiter">,</span>
+    <span class="field">GROUP</span> <span class="variable">BY</span>
       dim1<span class="punctuation_delimiter">,</span>
-      dim2 <span class="keyword">AS</span> dim_2<span class="punctuation_delimiter">,</span> <span class="comment spell">-- Column alias + trailing comma. Awesome!</span>
+      <span class="field">dim2</span> <span class="keyword">AS</span> <span class="variable">dim_2</span><span class="punctuation_delimiter">,</span> <span class="comment spell">-- Column alias + trailing comma. Awesome!</span>
 <span class="punctuation_bracket">)</span><span class="punctuation_delimiter">,</span>
 
 group_by_all_example <span class="keyword">AS</span> <span class="punctuation_bracket">(</span>
-  <span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="keyword">table</span>
-  |<span class="operator">&gt;</span> AGGREGATE
-      COUNT<span class="punctuation_bracket">(</span>1<span class="punctuation_bracket">)</span> <span class="keyword">AS</span> metric1<span class="punctuation_delimiter">,</span>
-      metric2<span class="punctuation_delimiter">,</span> <span class="comment spell">-- BQ Engine will remind you to aggregate this</span>
-    GROUP BY
+  <span class="keyword">FROM</span> dataset<span class="punctuation_delimiter">.</span><span class="type">table</span>
+  <span class="operator">|&gt;</span> <span class="keyword">AGGREGATE</span>
+      <span class="function_call type">COUNT</span><span class="punctuation_bracket">(</span><span class="string float number">1</span><span class="punctuation_bracket">)</span> <span class="keyword">AS</span> <span class="variable">metric1</span><span class="punctuation_delimiter">,</span>
+      <span class="field">metric2</span><span class="punctuation_delimiter">,</span> <span class="comment spell">-- BQ Engine will remind you to aggregate this</span>
+    <span class="field">GROUP</span> <span class="variable">BY</span>
       dim1
 <span class="punctuation_bracket">)</span>
 </code></pre>

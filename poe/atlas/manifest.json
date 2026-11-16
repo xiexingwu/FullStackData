@@ -1,0 +1,172 @@
+{
+  "sheets": {
+    "atlas": {
+      "atlas-background-0.webp": {
+        "file": "atlas/atlas-background-0.3b870c31.webp",
+        "bytes": 39310
+      },
+      "atlas-background-1.webp": {
+        "file": "atlas/atlas-background-1.39b0e064.webp",
+        "bytes": 96470
+      },
+      "atlas-background-2.webp": {
+        "file": "atlas/atlas-background-2.fd33f9c2.webp",
+        "bytes": 165598
+      },
+      "atlas-background-3.webp": {
+        "file": "atlas/atlas-background-3.368dd716.webp",
+        "bytes": 243878
+      },
+      "atlas-background-4.webp": {
+        "file": "atlas/atlas-background-4.c5574f3c.webp",
+        "bytes": 375718
+      },
+      "atlas-frame-0.webp": {
+        "file": "atlas/atlas-frame-0.c9266e27.webp",
+        "bytes": 6902
+      },
+      "atlas-frame-1.webp": {
+        "file": "atlas/atlas-frame-1.361b16a7.webp",
+        "bytes": 15092
+      },
+      "atlas-frame-2.webp": {
+        "file": "atlas/atlas-frame-2.9e5ccc95.webp",
+        "bytes": 27546
+      },
+      "atlas-frame-3.webp": {
+        "file": "atlas/atlas-frame-3.f7c11c08.webp",
+        "bytes": 40530
+      },
+      "atlas-frame-4.webp": {
+        "file": "atlas/atlas-frame-4.9d3a03db.webp",
+        "bytes": 61934
+      },
+      "atlas-group-background-0.webp": {
+        "file": "atlas/atlas-group-background-0.3159d904.webp",
+        "bytes": 38692
+      },
+      "atlas-group-background-1.webp": {
+        "file": "atlas/atlas-group-background-1.20965fbe.webp",
+        "bytes": 105914
+      },
+      "atlas-group-background-2.webp": {
+        "file": "atlas/atlas-group-background-2.de2e8ea2.webp",
+        "bytes": 199942
+      },
+      "atlas-group-background-3.webp": {
+        "file": "atlas/atlas-group-background-3.052a0830.webp",
+        "bytes": 318452
+      },
+      "atlas-group-background-4.webp": {
+        "file": "atlas/atlas-group-background-4.f92f8f5e.webp",
+        "bytes": 508170
+      },
+      "atlas-line-0.webp": {
+        "file": "atlas/atlas-line-0.18f4a7d7.webp",
+        "bytes": 26404
+      },
+      "atlas-line-1.webp": {
+        "file": "atlas/atlas-line-1.66335770.webp",
+        "bytes": 56030
+      },
+      "atlas-line-2.webp": {
+        "file": "atlas/atlas-line-2.2c4f4c86.webp",
+        "bytes": 78114
+      },
+      "atlas-line-3.webp": {
+        "file": "atlas/atlas-line-3.52a1328d.webp",
+        "bytes": 104346
+      },
+      "atlas-line-4.webp": {
+        "file": "atlas/atlas-line-4.6937b6a8.webp",
+        "bytes": 141758
+      },
+      "atlas-mastery-0.webp": {
+        "file": "atlas/atlas-mastery-0.dd18e1fb.webp",
+        "bytes": 8618
+      },
+      "atlas-mastery-1.webp": {
+        "file": "atlas/atlas-mastery-1.80b074bd.webp",
+        "bytes": 20338
+      },
+      "atlas-mastery-2.webp": {
+        "file": "atlas/atlas-mastery-2.04fb485c.webp",
+        "bytes": 32866
+      },
+      "atlas-mastery-3.webp": {
+        "file": "atlas/atlas-mastery-3.893e1d0c.webp",
+        "bytes": 46216
+      },
+      "atlas-mastery-4.webp": {
+        "file": "atlas/atlas-mastery-4.ec505dbe.webp",
+        "bytes": 72012
+      },
+      "atlas-mastery-overlay.webp": {
+        "file": "atlas/atlas-mastery-overlay.f6dd0f2b.webp",
+        "bytes": 256870
+      },
+      "atlas-skills-0.webp": {
+        "file": "atlas/atlas-skills-0.2be94a0c.webp",
+        "bytes": 13996
+      },
+      "atlas-skills-1.webp": {
+        "file": "atlas/atlas-skills-1.09fe2521.webp",
+        "bytes": 33636
+      },
+      "atlas-skills-2.webp": {
+        "file": "atlas/atlas-skills-2.43aa2898.webp",
+        "bytes": 62838
+      },
+      "atlas-skills-3.webp": {
+        "file": "atlas/atlas-skills-3.4656cf1a.webp",
+        "bytes": 94832
+      },
+      "atlas-skills-4.webp": {
+        "file": "atlas/atlas-skills-4.ec7b78ed.webp",
+        "bytes": 151316
+      },
+      "atlas-skills-disabled-0.webp": {
+        "file": "atlas/atlas-skills-disabled-0.005b85ea.webp",
+        "bytes": 9684
+      },
+      "atlas-skills-disabled-1.webp": {
+        "file": "atlas/atlas-skills-disabled-1.e6c7f95c.webp",
+        "bytes": 22932
+      },
+      "atlas-skills-disabled-2.webp": {
+        "file": "atlas/atlas-skills-disabled-2.04ba22d6.webp",
+        "bytes": 42960
+      },
+      "atlas-skills-disabled-3.webp": {
+        "file": "atlas/atlas-skills-disabled-3.65a9ff2c.webp",
+        "bytes": 65152
+      },
+      "atlas-skills-disabled-4.webp": {
+        "file": "atlas/atlas-skills-disabled-4.337dcc6a.webp",
+        "bytes": 105096
+      },
+      "background-0.png": {
+        "file": "atlas/background-0.7fa36d44.webp",
+        "bytes": 66
+      },
+      "background-1.png": {
+        "file": "atlas/background-1.65cbc051.webp",
+        "bytes": 72
+      },
+      "background-2.png": {
+        "file": "atlas/background-2.48102dd0.webp",
+        "bytes": 78
+      },
+      "background-3.png": {
+        "file": "atlas/background-3.bb97816e.webp",
+        "bytes": 94
+      },
+      "background-4.png": {
+        "file": "atlas/background-4.579aba2f.webp",
+        "bytes": 98
+      }
+    }
+  },
+  "icon_sheets": [],
+  "slot_icons": {}
+}

@@ -1,29 +1,101 @@
+/* Catppuccin Mocha palette: https://catppuccin.com/palette */
+:root {
+  color-scheme: dark;
+
+  --ctp-rosewater: #f5e0dc;
+  --ctp-flamingo: #f2cdcd;
+  --ctp-pink: #f5c2e7;
+  --ctp-mauve: #cba6f7;
+  --ctp-red: #f38ba8;
+  --ctp-maroon: #eba0ac;
+  --ctp-peach: #fab387;
+  --ctp-yellow: #f9e2af;
+  --ctp-green: #a6e3a1;
+  --ctp-teal: #94e2d5;
+  --ctp-sky: #89dceb;
+  --ctp-sapphire: #74c7ec;
+  --ctp-blue: #89b4fa;
+  --ctp-lavender: #b4befe;
+  --ctp-text: #cdd6f4;
+  --ctp-subtext1: #bac2de;
+  --ctp-subtext0: #a6adc8;
+  --ctp-overlay2: #9399b2;
+  --ctp-overlay1: #7f849c;
+  --ctp-overlay0: #6c7086;
+  --ctp-surface2: #585b70;
+  --ctp-surface1: #45475a;
+  --ctp-surface0: #313244;
+  --ctp-base: #1e1e2e;
+  --ctp-mantle: #181825;
+  --ctp-crust: #11111b;
+}
+
+::selection {
+  background: var(--ctp-surface2);
+  color: var(--ctp-text);
+}
+
 h1,
 h2,
 h3,
 h4,
 h5 {
-  color: #ddd;
+  color: var(--ctp-lavender);
   font-family: "Verdana", sans-serif;
+}
+
+h3 {
+  color: var(--ctp-peach);
+}
+
+h4,
+h5 {
+  color: var(--ctp-subtext0);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+h3,
+h4,
+h5 {
+  margin-top: 1.2em;
+  margin-bottom: 0.4em;
 }
 
 b,
 strong {
-  color: #fff;
+  color: var(--ctp-rosewater);
 }
 
 a {
-  color: #eee;
+  color: var(--ctp-blue);
+}
+
+a:hover {
+  color: var(--ctp-sapphire);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--ctp-surface1);
+}
+
+blockquote {
+  margin-left: 0;
+  padding-left: 15px;
+  border-left: 3px solid var(--ctp-mauve);
+  color: var(--ctp-subtext0);
 }
 
 html {
-  color: #ccc;
+  color: var(--ctp-text);
   font-family: "Georgia", serif;
   font-size: 1.2em;
   display: flex;
   flex-direction: row;
   justify-content: center;
-  background-color: #111;
+  background-color: var(--ctp-base);
 }
 
 body {
@@ -31,9 +103,32 @@ body {
   padding: 15px;
   display: flex;
   flex-direction: column;
+  line-height: 1.35;
+}
+
+/* Body is a flex column, so margins between its children don't collapse.
+   Keep the vertical margins on paragraphs and lists small to compensate;
+   the gap between two neighbours is the sum of their margins. */
+p {
+  margin: 0.4em 0;
+}
+
+ul,
+ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+li {
+  margin-bottom: 0.35em;
+}
+
+li:last-child {
+  margin-bottom: 0;
 }
 
 .site-title {
+  color: var(--ctp-mauve);
   font-size: 2.5em;
   margin-bottom: 10px;
   /* text-align: center; */
@@ -45,10 +140,16 @@ nav {
   justify-content: left;
   font-size: 1.2em;
   margin-bottom: 20px;
+  color: var(--ctp-overlay1);
+}
+
+.date,
+.post-date {
+  color: var(--ctp-subtext0);
 }
 
 .block {
-  border: 1px dotted white;
+  border: 1px dotted var(--ctp-overlay0);
   padding: 5px 15px;
   margin: 0 10px;
   text-align: center;
@@ -68,9 +169,9 @@ nav {
 }
 
 .wave {
-  background: #111;
-  color: #fff;
-  text-shadow: 1px 1px 10px #fff, 1px 1px 10px #ccc;
+  background: var(--ctp-base);
+  color: var(--ctp-text);
+  text-shadow: 1px 1px 10px var(--ctp-lavender), 1px 1px 10px var(--ctp-mauve);
 }
 
 footer {
@@ -85,8 +186,12 @@ footer hr {
 }
 
 table, th, td{
-  border: 1px solid;
+  border: 1px solid var(--ctp-surface2);
   border-collapse: collapse;
+}
+th {
+  background: var(--ctp-mantle);
+  color: var(--ctp-subtext1);
 }
 td:empty {
   border: 0px solid;
@@ -94,4 +199,11 @@ td:empty {
 
 summary {
   text-align: left;
+  color: var(--ctp-subtext1);
+  cursor: pointer;
+}
+
+/* Hides a SuperMD block marked with $block.attrs('hidden'). */
+.hidden {
+  display: none;
 }
